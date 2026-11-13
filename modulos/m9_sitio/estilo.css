@@ -1,0 +1,11 @@
+/* ============================================================================
+   ARCHIVO: modulos/m9_sitio/estilo.css
+   MODULO: m9_sitio (Lote D)
+   ROL: Aplica la guía visual con diseño adaptable a móvil.
+   LEE: Los valores de contratos/guia_visual.md, copiados a mano.
+   PRODUCE: Las reglas de estilo que usa index.html.
+   FUNCIONAMIENTO PREVISTO:
+     Archivo de estilo sin lógica: declara las variables de la guía visual con la maqueta adaptable.
+   VERIFICACION: Las seis variables de color tienen los valores exactos de la guía; por debajo de 700 px de ancho el visor queda encima de la tabla.
+   ESTADO: Esqueleto sin código. Este archivo solo documenta el trabajo pendiente.
+   ============================================================================ */

@@ -1,0 +1,11 @@
+/* ============================================================================
+   ARCHIVO: modulos/m8_calculadora/estilo.css
+   MODULO: m8_calculadora (Lote C)
+   ROL: Aplica la guía visual a la página de la calculadora.
+   LEE: Los valores de contratos/guia_visual.md, copiados a mano.
+   PRODUCE: Las reglas de estilo que usa calculadora.html.
+   FUNCIONAMIENTO PREVISTO:
+     Archivo de estilo sin lógica: declara las variables de la guía visual con la maqueta de la página.
+   VERIFICACION: Las seis variables de color tienen los valores exactos de contratos/guia_visual.md.
+   ESTADO: Esqueleto sin código. Este archivo solo documenta el trabajo pendiente.
+   ============================================================================ */

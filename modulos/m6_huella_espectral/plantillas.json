@@ -1,0 +1,44 @@
+{
+  "_comentario": {
+    "archivo": "modulos/m6_huella_espectral/plantillas.json",
+    "modulo": "m6_huella_espectral (Lote C)",
+    "rol": "Contiene los espectros de referencia de los cuatro tipos de objeto.",
+    "lee": "Nada: se rellena a mano desde bibliografía.",
+    "produce": "Las cuatro curvas (asteroide_rocoso, asteroide_oscuro, cometa, enana_marron) que lee comparacion_plantillas.py.",
+    "funcionamiento_previsto": [
+      "Archivo de datos sin lógica: rasgos espectrales de la especificación con sus curvas normalizadas."
+    ],
+    "verificacion": "Hay cuatro plantillas; cada una cubre de 0,75 a 5,0 micras con flujo normalizado.",
+    "estado": "Esqueleto sin código. Este archivo solo documenta el trabajo pendiente."
+  },
+  "plantillas": [
+    {
+      "tipo": "asteroide_rocoso",
+      "etiqueta_publica": "Roca con silicatos",
+      "rasgos": "Pendiente roja; absorción en torno a 1 y 2 micras.",
+      "longitud_onda_micras": [],
+      "flujo_normalizado": []
+    },
+    {
+      "tipo": "asteroide_oscuro",
+      "etiqueta_publica": "Roca primitiva con agua",
+      "rasgos": "Espectro plano; posible banda de hidratación en torno a 3 micras.",
+      "longitud_onda_micras": [],
+      "flujo_normalizado": []
+    },
+    {
+      "tipo": "cometa",
+      "etiqueta_publica": "Bola de hielo activa",
+      "rasgos": "Hielo de agua entre 2,7 y 3 micras; emisión de CO2 en 4,26 micras; CO en 4,67 micras.",
+      "longitud_onda_micras": [],
+      "flujo_normalizado": []
+    },
+    {
+      "tipo": "enana_marron",
+      "etiqueta_publica": "Objeto frío, casi un planeta",
+      "rasgos": "Absorción de agua en 1,4 micras; metano en 3,3 micras.",
+      "longitud_onda_micras": [],
+      "flujo_normalizado": []
+    }
+  ]
+}

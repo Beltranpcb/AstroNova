@@ -1,0 +1,15 @@
+{
+  "_comentario": {
+    "archivo": "modulos/m1_adquisicion/campos_objetivo.json",
+    "modulo": "m1_adquisicion (Lote A)",
+    "rol": "Declara los campos del cielo que el pipeline debe procesar.",
+    "lee": "Nada: se edita a mano en la hora 0.",
+    "produce": "La lista de campos (campo, nombre, ra_grados, dec_grados, radio_grados) que lee consulta_sia.py.",
+    "funcionamiento_previsto": [
+      "Archivo de datos sin lógica: una lista editable que fija los tres campos de la demo."
+    ],
+    "verificacion": "Cada entrada tiene los cinco datos; el identificador campo solo usa minúsculas, cifras, guion bajo.",
+    "estado": "Esqueleto sin código. Este archivo solo documenta el trabajo pendiente."
+  },
+  "campos": []
+}

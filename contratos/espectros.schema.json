@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contratos/espectros.schema.json",
+  "title": "espectros.json: huella espectral de cada pareja candidata",
+  "$comment": "ARCHIVO: contratos/espectros.schema.json. ROL: fija la forma de espectros.json: huella espectral de cada pareja candidata. PRODUCTOR: m6_huella_espectral/escritura_espectros.py. CONSUMIDORES: m7_publicacion, m9_sitio. RUTA REAL: datos/m6_huella_espectral/<campo>/espectros.json, copiado a datos/m7_publicacion/<campo>/espectros.json. VERIFICACION: check-jsonschema --schemafile contratos/espectros.schema.json <archivo>. No contiene lógica: solo describe datos.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version_contrato",
+    "campo",
+    "espectros"
+  ],
+  "properties": {
+    "_comentario": {
+      "type": "string",
+      "description": "Comentario libre para humanos. Ningún consumidor lo lee."
+    },
+    "version_contrato": {
+      "const": "1",
+      "description": "Versión del contrato. Cambia solo en un PR propio avisado a los cuatro lotes."
+    },
+    "campo": {
+      "type": "string",
+      "description": "Identificador del campo: minúsculas, cifras, guion bajo.",
+      "pattern": "^[a-z0-9_]+$"
+    },
+    "espectros": {
+      "type": "array",
+      "description": "Un espectro por pareja candidata medida.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id_pareja",
+          "agrupacion",
+          "puntos",
+          "tipo",
+          "ajustes_plantilla",
+          "temperatura_k",
+          "incertidumbre_temperatura_k",
+          "pico_wien_micras"
+        ],
+        "properties": {
+          "id_pareja": {
+            "type": "string",
+            "description": "Identificador de la pareja A-B dentro del campo.",
+            "pattern": "^p[0-9]{3}$"
+          },
+          "agrupacion": {
+            "description": "banda: un punto por exposición. detector: un punto promediado por detector cuando la señal/ruido es baja.",
+            "enum": [
+              "banda",
+              "detector"
+            ]
+          },
+          "puntos": {
+            "type": "array",
+            "description": "Puntos del espectro. Cada uno se midió en un instante distinto.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "longitud_onda_micras",
+                "flujo_mjy",
+                "error_mjy",
+                "mjd",
+                "detector"
+              ],
+              "properties": {
+                "longitud_onda_micras": {
+                  "type": "number",
+                  "description": "Longitud de onda leída en WCS-WAVE.",
+                  "minimum": 0.75,
+                  "maximum": 5.0
+                },
+                "flujo_mjy": {
+                  "type": "number",
+                  "description": "Flujo en milijansky."
+                },
+                "error_mjy": {
+                  "type": "number",
+                  "description": "Error del flujo en milijansky.",
+                  "exclusiveMinimum": 0
+                },
+                "mjd": {
+                  "type": "number",
+                  "description": "Fecha de la exposición en días julianos modificados (MJD)."
+                },
+                "detector": {
+                  "type": "integer",
+                  "description": "Detector de SPHEREx.",
+                  "minimum": 1,
+                  "maximum": 6
+                }
+              }
+            },
+            "minItems": 1
+          },
+          "tipo": {
+            "description": "Tipo asignado por comparación con plantillas.",
+            "enum": [
+              "asteroide_rocoso",
+              "asteroide_oscuro",
+              "cometa",
+              "enana_marron",
+              "indeterminado"
+            ]
+          },
+          "ajustes_plantilla": {
+            "type": "array",
+            "description": "Un ajuste por plantilla.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "tipo",
+                "chi2_reducido"
+              ],
+              "properties": {
+                "tipo": {
+                  "description": "Plantilla comparada.",
+                  "enum": [
+                    "asteroide_rocoso",
+                    "asteroide_oscuro",
+                    "cometa",
+                    "enana_marron"
+                  ]
+                },
+                "chi2_reducido": {
+                  "type": "number",
+                  "description": "Chi cuadrado reducido del ajuste.",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "temperatura_k": {
+            "description": "Temperatura del ajuste de Planck. Nula si el ajuste no converge.",
+            "exclusiveMinimum": 0,
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "incertidumbre_temperatura_k": {
+            "description": "Incertidumbre de la temperatura.",
+            "minimum": 0,
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "pico_wien_micras": {
+            "description": "2898 entre la temperatura.",
+            "exclusiveMinimum": 0,
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "_comentario": {
+    "archivo": "modulos/m8_calculadora/sensibilidad_spherex.json",
+    "modulo": "m8_calculadora (Lote C)",
+    "rol": "Contiene el límite de detección de SPHEREx por detector.",
+    "lee": "Nada: se rellena a mano desde la documentación de IRSA.",
+    "produce": "Los seis límites (uno por detector) que lee veredicto.js.",
+    "funcionamiento_previsto": [
+      "Archivo de datos sin lógica: una tabla de seis filas con el brillo mínimo detectable."
+    ],
+    "verificacion": "Hay seis entradas, una por detector, con su intervalo de longitud de onda.",
+    "estado": "Esqueleto sin código. Este archivo solo documenta el trabajo pendiente."
+  },
+  "detectores": [
+    {
+      "detector": 1,
+      "longitud_onda_min_micras": 0.75,
+      "longitud_onda_max_micras": 1.09,
+      "limite_magnitud_ab": null
+    },
+    {
+      "detector": 2,
+      "longitud_onda_min_micras": 1.1,
+      "longitud_onda_max_micras": 1.62,
+      "limite_magnitud_ab": null
+    },
+    {
+      "detector": 3,
+      "longitud_onda_min_micras": 1.63,
+      "longitud_onda_max_micras": 2.41,
+      "limite_magnitud_ab": null
+    },
+    {
+      "detector": 4,
+      "longitud_onda_min_micras": 2.42,
+      "longitud_onda_max_micras": 3.82,
+      "limite_magnitud_ab": null
+    },
+    {
+      "detector": 5,
+      "longitud_onda_min_micras": 3.83,
+      "longitud_onda_max_micras": 4.41,
+      "limite_magnitud_ab": null
+    },
+    {
+      "detector": 6,
+      "longitud_onda_min_micras": 4.42,
+      "longitud_onda_max_micras": 5.0,
+      "limite_magnitud_ab": null
+    }
+  ]
+}
