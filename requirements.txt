@@ -1,0 +1,19 @@
+# Acceso a datos astronómicos
+astropy>=6.0
+astroquery>=0.4.7
+pyvo>=1.5
+requests>=2.31
+
+# Procesado de imágenes y detección de fuentes
+numpy>=1.26
+scipy>=1.11
+photutils>=1.12
+Pillow>=10.0
+
+# Análisis y visualización
+pandas>=2.1
+matplotlib>=3.8
+
+# Backend web
+fastapi>=0.110
+uvicorn[standard]>=0.29
