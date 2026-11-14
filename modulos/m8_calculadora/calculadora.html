@@ -2,10 +2,83 @@
      ARCHIVO: modulos/m8_calculadora/calculadora.html
      MODULO: m8_calculadora (Lote C)
      ROL: Define la página con los tres deslizadores del planeta hipotético.
-     LEE: estilo.css; interfaz.js.
+     LEE: estilo.css; interfaz.js; fisica_planeta.js; veredicto.js.
      PRODUCE: La estructura que el navegador muestra: tres deslizadores, tres cifras, un mensaje de veredicto.
      FUNCIONAMIENTO PREVISTO:
        Archivo de estructura sin lógica: declara los controles que interfaz.js conecta.
      VERIFICACION: La página abre sin errores de consola; contiene los deslizadores de distancia, diámetro, albedo.
-     ESTADO: Esqueleto sin código. Este archivo solo documenta el trabajo pendiente.
+     USO: servir el repositorio por HTTP y abrir modulos/m8_calculadora/calculadora.html.
      ============================================================================ -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Calculadora del Planeta X · HUELLA X</title>
+  <meta name="description" content="Calcula si SPHEREx podría detectar un planeta hipotético según su distancia, diámetro y albedo.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+  <header class="cabecera">
+    <p class="migas"><a href="../m9_sitio/index.html">← Volver a HUELLA X</a></p>
+    <h1>Calculadora del Planeta X</h1>
+    <p class="entrada">
+      Mueve los tres deslizadores: la página calcula el brillo y la temperatura del
+      planeta hipotético y decide si SPHEREx podría verlo.
+    </p>
+  </header>
+
+  <main class="maqueta">
+    <section class="controles" aria-label="Planeta hipotético">
+      <div class="control">
+        <label for="distancia">Distancia al Sol <output id="valor_distancia" for="distancia">500 UA</output></label>
+        <input id="distancia" type="range" min="1" max="1000" step="1" value="500">
+        <p class="ayuda">1 UA es la distancia media Tierra-Sol.</p>
+      </div>
+
+      <div class="control">
+        <label for="diametro">Diámetro <output id="valor_diametro" for="diametro">25 000 km</output></label>
+        <input id="diametro" type="range" min="1000" max="50000" step="500" value="25000">
+        <p class="ayuda">25 000 km es algo menos que el diámetro de Neptuno.</p>
+      </div>
+
+      <div class="control">
+        <label for="albedo">Albedo <output id="valor_albedo" for="albedo">0,40</output></label>
+        <input id="albedo" type="range" min="0.05" max="0.95" step="0.01" value="0.4">
+        <p class="ayuda">Fracción de luz que refleja: 0,4 es parecido a la Tierra.</p>
+      </div>
+    </section>
+
+    <section class="resultados" aria-live="polite" aria-label="Resultado del planeta hipotético">
+      <div class="cifra">
+        <span class="etiqueta">Magnitud aparente</span>
+        <strong id="magnitud">—</strong>
+      </div>
+      <div class="cifra">
+        <span class="etiqueta">Temperatura de equilibrio</span>
+        <strong id="temperatura">—</strong>
+      </div>
+      <div class="cifra">
+        <span class="etiqueta">Máximo de emisión</span>
+        <strong id="pico">—</strong>
+      </div>
+
+      <p id="veredicto" class="veredicto" data-detectable="false">—</p>
+      <p id="motivo" class="motivo"></p>
+    </section>
+  </main>
+
+  <footer class="nota">
+    Los límites de SPHEREx son 5σ para fuente puntual en el sondeo de todo el cielo,
+    tomados de la bibliografía de la misión. Un planeta más frío que la banda de
+    5 micras se escapa del rango espectral del telescopio.
+  </footer>
+
+  <script src="fisica_planeta.js" defer></script>
+  <script src="veredicto.js" defer></script>
+  <script src="interfaz.js" defer></script>
+</body>
+</html>
