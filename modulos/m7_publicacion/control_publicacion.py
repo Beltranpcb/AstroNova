@@ -59,6 +59,12 @@ ESQUEMAS = {
     "espectros.json": "espectros.schema.json",
 }
 
+# Archivos comunes a todos los campos que la web lee si existen (plantillas de m6, catálogo de m7).
+ESQUEMAS_OPCIONALES = {
+    "plantillas.json": "plantillas.schema.json",
+    "catalogo.json": "catalogo.schema.json",
+}
+
 # Lo que la web necesita encontrar en el directorio de cada campo.
 ARCHIVOS_PNG = ("epoca_a.png", "epoca_b.png", "diferencia.png")
 ARCHIVOS_DEL_CAMPO = ("meta.json", "candidatos.json", "espectros.json") + ARCHIVOS_PNG
@@ -147,6 +153,30 @@ def validar_pngs(directorio):
     return problemas
 
 
+def validar_catalogo_contra_candidatos(base):
+    """Cada objeto de catalogo.json debe ser un candidato publicado y no anunciar un espectro que no existe."""
+    ruta = base / "catalogo.json"
+    if not ruta.is_file():
+        return []
+    try:
+        objetos = leer_json(ruta)["objetos"]
+    except (json.JSONDecodeError, KeyError):
+        return []  # el esquema ya lo denuncia
+    problemas = []
+    for objeto in objetos:
+        ruta_candidatos = base / objeto.get("campo", "") / "candidatos.json"
+        if not ruta_candidatos.is_file():
+            problemas.append("catalogo.json: %s es de un campo no publicado" % objeto.get("id_objeto"))
+            continue
+        candidatos = {c["id_candidato"]: c for c in leer_json(ruta_candidatos)["candidatos"]}
+        candidato = candidatos.get(objeto.get("id_candidato"))
+        if candidato is None:
+            problemas.append("catalogo.json: %s no está en candidatos.json" % objeto.get("id_objeto"))
+        elif objeto.get("datos", {}).get("espectro") in ("real", "sintetico", "no_declarado") and not candidato["tiene_espectro"]:
+            problemas.append("catalogo.json: %s anuncia un espectro que candidatos.json no tiene" % objeto.get("id_objeto"))
+    return problemas
+
+
 def validar(raiz_datos=RAIZ_DATOS_POR_DEFECTO, raiz_contratos=None):
     """Recorre la publicación y devuelve la lista de incumplimientos."""
     raiz_contratos = resolver_contratos(raiz_contratos)
@@ -190,6 +220,18 @@ def validar(raiz_datos=RAIZ_DATOS_POR_DEFECTO, raiz_contratos=None):
                 problemas.append("no se encuentra %s/contratos/%s" % (raiz_contratos, esquema))
                 continue
             problemas.extend(validar_json(ruta, validador))
+
+    # 2 bis. Archivos comunes opcionales: si están, cumplen su contrato.
+    for nombre, esquema in ESQUEMAS_OPCIONALES.items():
+        ruta = base / nombre
+        if not ruta.is_file():
+            continue
+        validador = cargar_validador(raiz_contratos, esquema)
+        if validador is None:
+            problemas.append("no se encuentra %s/contratos/%s" % (raiz_contratos, esquema))
+            continue
+        problemas.extend(validar_json(ruta, validador))
+    problemas.extend(validar_catalogo_contra_candidatos(base))
 
     # 3. El recuento anunciado tiene que ser el real.
     if ruta_campos.is_file() and validador_campos is not None:

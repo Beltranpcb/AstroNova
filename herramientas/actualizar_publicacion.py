@@ -29,6 +29,7 @@ from __future__ import annotations
 import argparse
 import datetime
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -116,7 +117,9 @@ def ejecutar_paso(modulo: str, archivo: str, campo: str | None) -> tuple[bool, s
     orden = [sys.executable, "-m", f"modulos.{modulo}.{archivo}"]
     if campo:
         orden.append(campo)
-    proceso = subprocess.run(orden, cwd=RAIZ, capture_output=True, text=True)
+    # Los módulos escriben en UTF-8 (acentos, µ, →): se fuerza en el hijo y al leerlo, también en Windows.
+    entorno = {**os.environ, "PYTHONIOENCODING": "utf-8"}
+    proceso = subprocess.run(orden, cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", errors="replace", env=entorno)
     if proceso.returncode != 0:
         cola = (proceso.stderr or proceso.stdout).strip().splitlines()
         return False, cola[-1] if cola else f"código {proceso.returncode}"
@@ -223,4 +226,9 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    # En Windows la consola o una redirección usan cp1252 y «→ ✓ ✗» rompen el print:
+    # se fuerza UTF-8 (y se reemplaza lo que no quepa) antes de escribir nada.
+    for flujo in (sys.stdout, sys.stderr):
+        if hasattr(flujo, "reconfigure"):
+            flujo.reconfigure(encoding="utf-8", errors="replace")
     raise SystemExit(main())
