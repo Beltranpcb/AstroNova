@@ -356,3 +356,148 @@ def prueba_sin_red_se_usa_el_listado_guardado(tmp_path, monkeypatch):
 
     listado = consulta_sia.consultar_campo(campo, consulta=sin_red)
     assert listado["exposiciones"][0]["identificador"] == "x1"
+
+
+# --------------------------------------------------------------- indice_s3
+import datetime  # noqa: E402
+
+from astropy.io import fits as _fits  # noqa: E402
+from astropy.wcs import WCS as _WCS  # noqa: E402
+
+from modulos.m1_adquisicion import indice_s3  # noqa: E402
+
+LADO_SPHEREX = 2040
+ESCALA_GRADOS = 6.15 / 3600
+
+
+def _cabecera_imagen(ra, dec, obsid="2025W48_2A_0120_1", detector=3, mjd=61007.0282):
+    """Cabecera IMAGE sintética con la forma de las reales: TAN, 2040 px, OBSID, DETECTOR, MJD-OBS."""
+    w = _WCS(naxis=2)
+    w.wcs.ctype = ["RA---TAN", "DEC--TAN"]
+    w.wcs.crval = [ra, dec]
+    w.wcs.crpix = [LADO_SPHEREX / 2 + 0.5, LADO_SPHEREX / 2 + 0.5]
+    w.wcs.cdelt = [-ESCALA_GRADOS, ESCALA_GRADOS]
+    h = w.to_header()
+    h["XTENSION"] = "IMAGE"
+    h["NAXIS1"], h["NAXIS2"] = LADO_SPHEREX, LADO_SPHEREX
+    h["OBSID"], h["DETECTOR"], h["MJD-OBS"] = obsid, detector, mjd
+    return h.tostring()
+
+
+def _fits_texto(cabecera_imagen):
+    """Primeros bloques de un FITS: cabecera primaria mínima y después la de IMAGE."""
+    primaria = _fits.PrimaryHDU().header.tostring()
+    return primaria + cabecera_imagen + "x" * 1000
+
+
+def prueba_las_semanas_probables_incluyen_las_pasadas_conocidas():
+    semanas = indice_s3.semanas_probables(160.617, 30.67, hasta=datetime.date(2026, 6, 1))
+    assert "2025W48" in semanas              # pasada comprobada en IRSA (sphx_a)
+    assert any(s.startswith("2026W2") for s in semanas)  # la pasada opuesta, seis meses después
+    assert len(semanas) <= 12                # pocas semanas: la exploración es cara
+
+
+def prueba_se_extrae_la_segunda_cabecera_del_fits():
+    cabecera = _cabecera_imagen(150.0, 2.0)
+    extraida = indice_s3.cabecera_imagen_de(_fits_texto(cabecera))
+    h = _fits.Header.fromstring(extraida)
+    assert h["EXTNAME"] == "IMAGE" if "EXTNAME" in h else h["XTENSION"] == "IMAGE"
+    assert h["OBSID"] == "2025W48_2A_0120_1" and h["DETECTOR"] == 3
+
+
+def prueba_cubre_exige_que_el_recorte_quepa_entero():
+    registro = {"cabecera": _cabecera_imagen(150.0, 2.0)}
+    assert indice_s3.cubre(registro, 150.0, 2.0, 0.2)
+    assert indice_s3.cubre(registro, 150.0, 3.4, 0.2)          # cerca del borde, pero cabe
+    assert not indice_s3.cubre(registro, 150.0, 3.6, 0.2)      # el cuadrado se sale
+    assert not indice_s3.cubre(registro, 150.0, 2.0, 1.8)      # más grande que la imagen
+    assert not indice_s3.cubre(registro, 330.0, -2.0, 0.2)     # otro lado del cielo
+
+
+def prueba_url_de_acceso_apunta_al_mismo_fits_en_irsa():
+    clave = "dr1/level2/2025W48_2A/l2b-v27/6/level2_2025W48_2A_0120_1D6_spx_l2b-v27.fits"
+    url = indice_s3.url_acceso("dr1", clave)
+    assert url == "https://irsa.ipac.caltech.edu/ibe/data/spherex/" + clave
+    with pytest.raises(ValueError):
+        indice_s3.url_acceso("qr3", clave)
+
+
+def _listar_falso(claves):
+    """Imita el listado de S3: carpetas por delimitador y claves completas sin él."""
+    def listar(prefijo, delimitador=True):
+        bajo = [c for c in claves if c.startswith(prefijo)]
+        if not delimitador:
+            return [], bajo
+        carpetas = sorted({prefijo + c[len(prefijo):].split("/")[0] + "/" for c in bajo if "/" in c[len(prefijo):]})
+        return carpetas, [c for c in bajo if "/" not in c[len(prefijo):]]
+    return listar
+
+
+def _clave(mitad, n, k, d, proceso="l2b-v27-2026-209"):
+    return f"dr1/level2/{mitad}/{proceso}/{d}/level2_{mitad}_{n:04d}_{k}D{d}_spx_{proceso}.fits"
+
+
+def prueba_claves_de_mitad_prefiere_la_carpeta_normal_a_la_de_reintento():
+    claves = [_clave("2025W48_2A", 120, 1, 3), _clave("2025W48_2A", 120, 1, 3, "l2b_retry-v27-2026-209"),
+              _clave("2025W48_2A", 121, 1, 3, "l2b_retry-v27-2026-209")]
+    elegidas = indice_s3.claves_de_mitad("dr1", "2025W48_2A", _listar_falso(claves))
+    assert elegidas == [claves[0], claves[2]]
+
+
+def prueba_la_exploracion_lee_primero_tres_detectores_y_luego_solo_lo_que_acierta(tmp_path, monkeypatch):
+    monkeypatch.setattr(indice_s3, "DIR_CACHE", tmp_path / "indice_s3")
+    mitad = "2025W48_2A"
+    claves = [_clave(mitad, n, k, d) for n in (119, 120) for k in (1, 2) for d in range(1, 7)]
+    cielo = {119: (164.2, 12.8), 120: (160.6, 30.8)}   # solo la 0120 cubre el campo...
+    leidas = []
+
+    def leer(clave):
+        leidas.append(clave)
+        m = indice_s3.PATRON.search(clave)
+        n, d = int(m["n"]), int(m["d"])
+        ra, dec = cielo[n]
+        ra += 4.0 * ((3 - d) % 3)  # ...y solo con la pareja de detectores 3/6: cada pareja mira a otro sitio
+        return _cabecera_imagen(ra, dec, obsid=f"{mitad}_{n:04d}_{m['k']}", detector=d, mjd=61007.0 + n / 1e4 + int(m["k"]) / 1e3)
+
+    campo = {"campo": "sphx_a", "nombre": "Campo A", "ra_grados": 160.617, "dec_grados": 30.67, "radio_grados": 0.2}
+    listado = indice_s3.explorar_campo(campo, ["2025W48"], listar_fn=_listar_falso(claves), leer_fn=leer, hilos=2,
+                                       aviso=lambda texto: None)
+    ids = sorted(e["identificador"] for e in listado["exposiciones"])
+    assert ids == [f"{mitad}_0120_{k}_D{d}" for k in (1, 2) for d in (3, 6)]
+    assert all(e["access_url"].startswith(indice_s3.IBE + "dr1/") and e["coleccion"] == "spherex_dr1"
+               for e in listado["exposiciones"])
+    assert [e["t_min"] for e in listado["exposiciones"]] == sorted(e["t_min"] for e in listado["exposiciones"])
+    # Primera pasada: subexposición 1 de D1-D3 de las dos exposiciones (6 lecturas).
+    primeras = leidas[:6]
+    assert all(indice_s3.PATRON.search(c)["k"] == "1" and int(indice_s3.PATRON.search(c)["d"]) <= 3 for c in primeras)
+    # Segunda pasada: solo la 0120, detectores 3 y 6 (el gemelo), las dos subexposiciones; nunca la 0119 en D4-D6.
+    segundas = leidas[6:]
+    assert segundas and all("_0120_" in c for c in segundas)
+    assert {int(indice_s3.PATRON.search(c)["d"]) for c in segundas} == {3, 6}
+    # La caché evita volver a leer: una segunda exploración no toca la red.
+    leidas.clear()
+    indice_s3.explorar_campo(campo, ["2025W48"], listar_fn=_listar_falso(claves), leer_fn=leer, hilos=2, aviso=lambda t: None)
+    assert leidas == []
+
+
+def prueba_sin_tap_ni_listado_guardado_se_explora_s3(tmp_path, monkeypatch):
+    monkeypatch.setattr(consulta_sia, "DIR_DATOS", tmp_path)
+    campo = {"campo": "campo_s3", "nombre": "Vía S3", "ra_grados": 10.0, "dec_grados": 20.0, "radio_grados": 0.2}
+
+    def sin_red(*_a, **_k):
+        raise RuntimeError("TAP caído")
+
+    def s3_falso(c):
+        assert c is campo
+        return {"campo": "campo_s3", "nombre": "Vía S3", "centro": {"ra_grados": 10.0, "dec_grados": 20.0},
+                "radio_grados": 0.2, "exposiciones": [{"identificador": "s3_1", "t_min": 61000.0, "detector": 3,
+                                                       "access_url": indice_s3.IBE + "dr1/x.fits", "coleccion": "spherex_dr1"}]}
+
+    listado = consulta_sia.consultar_campo(campo, consulta=sin_red, explorar_s3=s3_falso)
+    assert listado["exposiciones"][0]["identificador"] == "s3_1"
+
+    def s3_roto(c):
+        raise OSError("sin salida a S3")
+
+    with pytest.raises(RuntimeError, match="S3"):
+        consulta_sia.consultar_campo(campo, consulta=sin_red, explorar_s3=s3_roto)

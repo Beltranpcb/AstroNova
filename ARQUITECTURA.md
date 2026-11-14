@@ -195,6 +195,7 @@ flowchart LR
 | `LEEME.md` | Describe el módulo junto a su comando de verificación. |
 | `campos_objetivo.json` | Declara los campos del cielo que el pipeline debe procesar. |
 | `consulta_sia.py` | Lista las exposiciones de SPHEREx que cubren un campo objetivo. |
+| `indice_s3.py` | Lista las exposiciones sin TAP: lee las cabeceras de los FITS en la copia pública de AWS S3 y comprueba la cobertura con su WCS. |
 | `seleccion_epocas.py` | Elige qué exposiciones cumplen cada papel del contrato de selección. |
 | `descarga_recortes.py` | Descarga el recorte FITS de cada exposición seleccionada. |
 | `pruebas/prueba_adquisicion.py` | Comprueba la selección de épocas sobre un listado sintético sin usar la red. |
@@ -1240,6 +1241,7 @@ AstroNova/
 │   │   ├── LEEME.md                        Describe el módulo junto a su comando de verificación.
 │   │   ├── campos_objetivo.json            Declara los campos del cielo que el pipeline debe procesar.
 │   │   ├── consulta_sia.py                 Lista las exposiciones de SPHEREx que cubren un campo objetivo.
+│   │   ├── indice_s3.py                    Lista exposiciones sin TAP: cabeceras de los FITS en AWS S3 y su WCS.
 │   │   ├── descarga_recortes.py            Descarga el recorte FITS de cada exposición seleccionada.
 │   │   └── seleccion_epocas.py             Elige qué exposiciones cumplen cada papel del contrato de selección.
 │   ├── m2_alineacion/

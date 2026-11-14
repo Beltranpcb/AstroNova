@@ -1121,6 +1121,7 @@ AstroNova/
 │   │   ├── LEEME.md                        Describe el módulo junto a su comando de verificación.
 │   │   ├── campos_objetivo.json            Declara los campos del cielo que el pipeline debe procesar.
 │   │   ├── consulta_sia.py                 Lista las exposiciones de SPHEREx que cubren un campo objetivo.
+│   │   ├── indice_s3.py                    Lista exposiciones sin TAP: cabeceras de los FITS en AWS S3 y su WCS.
 │   │   ├── descarga_recortes.py            Descarga el recorte FITS de cada exposición seleccionada.
 │   │   └── seleccion_epocas.py             Elige qué exposiciones cumplen cada papel del contrato de selección.
 │   ├── m2_alineacion/
