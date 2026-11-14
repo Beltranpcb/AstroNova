@@ -21,3 +21,4 @@ matplotlib>=3.8
 # Verificación (todos los módulos de Python, contratos)
 pytest>=8.0
 check-jsonschema>=0.28
+jsonschema>=4.18
