@@ -8,24 +8,28 @@
 #   Recibe de indice_campos.py: directorio publicado completo.
 #   1. Validar cada JSON contra su esquema  ->  lista de incumplimientos
 #   2. Medir el tamaño de cada archivo  ->  archivos de más de 1 MB
-#   3. Fijar el código de salida  ->  informe de control
+#   3. Leer la cabecera de los tres PNG  ->  PNG que no miden 600 x 600
+#   4. Fijar el código de salida  ->  informe de control
 #   Entrega a quien publica: informe de control.
-# VERIFICACION: Con los ejemplos sale con código 0; con un JSON inválido o un
-#   archivo de más de 1 MB sale con código distinto de cero.
+# VERIFICACION: Con los ejemplos sale con código 0; con un JSON inválido, un
+#   archivo de más de 1 MB o un PNG de otro tamaño sale con código distinto de cero.
 # USO: python -m modulos.m7_publicacion.control_publicacion
 # ============================================================================
 """Puerta de salida de la publicación: nada llega a la web sin pasar por aquí.
 
-Comprueba tres cosas y las reúne en un solo informe:
+Comprueba cinco cosas y las reúne en un solo informe:
   1. que cada JSON valide contra el esquema de contratos/;
   2. que no falte ninguno de los seis archivos que la web espera de un campo;
   3. que ningún archivo supere 1 MB (los PNG deben pesar menos; el resto son
-     JSON pequeños).
+     JSON pequeños);
+  4. que los tres PNG midan 600 x 600, como fija contratos/imagenes_png.md;
+  5. que el número de candidatos anunciado en campos.json sea el real.
 
-Además contrasta que el número de candidatos anunciado en campos.json sea el
-real: un índice desfasado deja la web mostrando un campo vacío sin dar error.
+El punto 5 es el más silencioso: un índice desfasado deja la web mostrando un
+campo vacío sin dar ningún error.
 """
 import json
+import struct
 import sys
 from pathlib import Path
 
@@ -56,16 +60,14 @@ ESQUEMAS = {
 }
 
 # Lo que la web necesita encontrar en el directorio de cada campo.
-ARCHIVOS_DEL_CAMPO = (
-    "meta.json",
-    "candidatos.json",
-    "espectros.json",
-    "epoca_a.png",
-    "epoca_b.png",
-    "diferencia.png",
-)
+ARCHIVOS_PNG = ("epoca_a.png", "epoca_b.png", "diferencia.png")
+ARCHIVOS_DEL_CAMPO = ("meta.json", "candidatos.json", "espectros.json") + ARCHIVOS_PNG
 
 MAXIMO_BYTES = 1024 * 1024
+
+# Tamaño que exige contratos/imagenes_png.md para los tres PNG.
+TAMANO_PNG = (600, 600)
+FIRMA_PNG = b"\x89PNG\r\n\x1a\n"
 
 
 def leer_json(ruta):
@@ -87,6 +89,8 @@ def resolver_contratos(raiz_contratos=None):
     if canonico is not None:
         return canonico
     return RAIZ_ESQUEMAS_PROPIOS
+
+
 def cargar_validador(raiz_contratos, nombre_esquema):
     """Devuelve un validador del esquema pedido, o None si no se puede leer."""
     ruta = Path(raiz_contratos) / nombre_esquema
@@ -110,6 +114,37 @@ def validar_json(ruta, validador):
 
     errores = sorted(validador.iter_errors(documento), key=lambda e: list(e.absolute_path))
     return ["%s: %s" % (ruta, describir_error(error)) for error in errores]
+
+
+def dimensiones_png(ruta):
+    """Devuelve (ancho, alto) leyendo la cabecera IHDR, o None si no es un PNG.
+
+    Se leen solo los primeros 24 bytes: la firma y el bloque IHDR. Así no hace
+    falta ninguna biblioteca de imagen para comprobar el tamaño.
+    """
+    with open(ruta, "rb") as archivo:
+        cabecera = archivo.read(24)
+    if len(cabecera) < 24 or cabecera[:8] != FIRMA_PNG or cabecera[12:16] != b"IHDR":
+        return None
+    return struct.unpack(">II", cabecera[16:24])
+
+
+def validar_pngs(directorio):
+    """Comprueba que los tres PNG del campo miden lo que fija el contrato."""
+    problemas = []
+    for nombre in ARCHIVOS_PNG:
+        ruta = directorio / nombre
+        if not ruta.is_file():
+            continue  # la ausencia ya la denuncia la lista de archivos
+        medidas = dimensiones_png(ruta)
+        if medidas is None:
+            problemas.append("%s: no se puede leer como PNG" % ruta)
+        elif medidas != TAMANO_PNG:
+            problemas.append(
+                "%s: mide %d x %d, el contrato exige %d x %d"
+                % (ruta, medidas[0], medidas[1], TAMANO_PNG[0], TAMANO_PNG[1])
+            )
+    return problemas
 
 
 def validar(raiz_datos=RAIZ_DATOS_POR_DEFECTO, raiz_contratos=None):
@@ -143,6 +178,8 @@ def validar(raiz_datos=RAIZ_DATOS_POR_DEFECTO, raiz_contratos=None):
                     "%s: %.1f MB, supera el máximo de 1 MB"
                     % (ruta, ruta.stat().st_size / MAXIMO_BYTES)
                 )
+
+        problemas.extend(validar_pngs(directorio))
 
         for nombre, esquema in ESQUEMAS.items():
             ruta = directorio / nombre

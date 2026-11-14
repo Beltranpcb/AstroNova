@@ -169,11 +169,22 @@ def construir_candidatos(campo, fuentes, movimiento, identificacion, espectros):
     }
 
 
+def cargar_tabla(raiz, campo, nombre, directorio, archivo):
+    """Lee una tabla de entrada y, si falta, dice qué módulo hay que ejecutar."""
+    ruta = raiz / directorio / campo / archivo
+    if not ruta.is_file():
+        raise FileNotFoundError(
+            "falta %s\n  el campo %r todavía no tiene %s: ejecuta %s para ese campo"
+            % (ruta, campo, archivo, directorio)
+        )
+    return leer_json(ruta)
+
+
 def unir_campo(campo, raiz_datos=RAIZ_DATOS_POR_DEFECTO):
     """Lee las cuatro tablas del campo y escribe su candidatos.json."""
     raiz = Path(raiz_datos)
     tablas = {
-        nombre: leer_json(raiz / directorio / campo / archivo)
+        nombre: cargar_tabla(raiz, campo, nombre, directorio, archivo)
         for nombre, (directorio, archivo) in ENTRADAS.items()
     }
     contenido = construir_candidatos(
