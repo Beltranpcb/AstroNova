@@ -27,7 +27,15 @@ from PIL import Image
 
 from modulos.m2_alineacion import exportacion_png, metadatos_campo, reproyeccion, resta_zodiacal
 
-ESQUEMA_META = json.loads((Path(__file__).resolve().parents[1] / "esquemas" / "meta.schema.json").read_text(encoding="utf-8"))
+def _ruta_esquema(nombre):
+    """Devuelve contratos/<nombre> si existe el arbol completo; si no, esquemas/<nombre>."""
+    for base in Path(__file__).resolve().parents:
+        candidato = base / "contratos" / nombre
+        if candidato.is_file():
+            return candidato
+    return Path(__file__).resolve().parents[1] / "esquemas" / nombre
+
+ESQUEMA_META = json.loads(_ruta_esquema("meta.schema.json").read_text(encoding="utf-8"))
 
 LADO = 118
 ESCALA_GRADOS = 6.15 / 3600
