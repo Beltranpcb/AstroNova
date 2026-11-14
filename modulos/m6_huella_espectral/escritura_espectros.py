@@ -97,8 +97,30 @@ def construir_espectros(campo, medido, tipos, temperaturas):
 
 
 def escribir_campo(campo, raiz_datos="datos"):
-    """Lee las tres tablas del campo y escribe espectros.json."""
+    """Lee las tres tablas del campo y escribe espectros.json.
+
+    Si falta alguna de las tres (por ejemplo porque la fotometría no pudo medir
+    nada), escribe un espectros.json vacío y avisa: m7 puede seguir publicando el
+    campo con `tiene_espectro: false`, en lugar de romper toda la cadena.
+    """
     directorio = Path(raiz_datos) / "m6_huella_espectral" / campo
+    entradas = ("espectro_medido.json", "tipo_espectral.json", "temperatura.json")
+    faltan = [nombre for nombre in entradas if not (directorio / nombre).exists()]
+    if faltan:
+        print(
+            "AVISO: faltan %s en %s; se publica espectros.json vacío."
+            % (", ".join(faltan), directorio),
+            file=sys.stderr,
+        )
+        return escribir_json(
+            directorio / "espectros.json",
+            {
+                "_comentario": "Sin espectros: faltan %s." % ", ".join(faltan),
+                "version_contrato": "1",
+                "campo": campo,
+                "espectros": [],
+            },
+        )
     contenido = construir_espectros(
         campo,
         leer_json(directorio / "espectro_medido.json"),
