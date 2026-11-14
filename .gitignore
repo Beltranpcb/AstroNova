@@ -13,10 +13,7 @@ __pycache__/
 # Ningún FITS entra en git
 *.fits
 
-# De datos/ solo entran: su LEEME, lo publicado para la web, la caché de catálogos
+# Nada de datos/ entra en git: es salida del pipeline, no fuente.
+# Se regenera con los módulos (o con m9_sitio/ejemplos/generar_datos.py).
 datos/*
 !datos/LEEME.md
-!datos/m7_publicacion/
-!datos/m5_identificacion/
-datos/m5_identificacion/*
-!datos/m5_identificacion/cache/

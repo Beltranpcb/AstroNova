@@ -12,7 +12,7 @@
 | Productor | `m2_alineacion/exportacion_png.py` |
 | Consumidores | `m7_publicacion` (las copia), `m9_sitio` (las muestra) |
 | Ruta | `datos/m2_alineacion/<campo>/`, copiadas a `datos/m7_publicacion/<campo>/` |
-| En git | Solo las copias de `datos/m7_publicacion/`. |
+| En git | No: `datos/` no entra en el repositorio. |
 
 ## Forma obligatoria
 
