@@ -154,8 +154,28 @@ def registro_de(clave: str, cabecera: str) -> dict:
     }
 
 
+def separacion_grados(ra1: float, dec1: float, ra2: float, dec2: float) -> float:
+    """Distancia angular (haversine), en grados."""
+    import math
+
+    p1, p2 = math.radians(dec1), math.radians(dec2)
+    h = math.sin((p2 - p1) / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(math.radians(ra2 - ra1) / 2) ** 2
+    return math.degrees(2 * math.asin(min(1.0, math.sqrt(h))))
+
+
+TOLERANCIA_IDA_Y_VUELTA = 1.0 / 3600  # grados
+
+
 def cubre(registro: dict, ra: float, dec: float, radio: float) -> bool:
-    """Verdadero si el cuadrado de semilado `radio` alrededor de (ra, dec) cabe en la imagen."""
+    """Verdadero si el cuadrado de semilado `radio` alrededor de (ra, dec) cabe en la imagen.
+
+    Dos defensas contra la inversión del WCS con SIP, que para puntos lejanos de la imagen
+    puede divergir y devolver un píxel «dentro» que no corresponde a nada (pasó con datos
+    reales: un recorte salió a 50° del campo): el centro de la imagen tiene que estar a
+    menos de su semidiagonal más el radio, y el píxel hallado tiene que volver a (ra, dec).
+    """
+    import warnings
+
     import numpy as np
     from astropy.io import fits
     from astropy.wcs import WCS
@@ -164,10 +184,18 @@ def cubre(registro: dict, ra: float, dec: float, radio: float) -> bool:
     w = WCS(h).celestial
     ancho, alto = int(h["NAXIS1"]), int(h["NAXIS2"])
     escala = float(np.sqrt(abs(np.linalg.det(w.pixel_scale_matrix))))
+    ra_c, dec_c = (float(v) for v in w.pixel_to_world_values((ancho - 1) / 2, (alto - 1) / 2))
+    if separacion_grados(ra_c, dec_c, ra, dec) > escala * np.hypot(ancho, alto) / 2 + radio:
+        return False
     margen = radio / escala
     try:
-        x, y = (float(v) for v in w.world_to_pixel_values(ra, dec))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            x, y = (float(v) for v in w.world_to_pixel_values(ra, dec))
+            ra_v, dec_v = (float(v) for v in w.pixel_to_world_values(x, y))
     except Exception:  # el punto está detrás de la proyección
+        return False
+    if not (np.isfinite(x) and np.isfinite(y)) or separacion_grados(ra_v, dec_v, ra, dec) > TOLERANCIA_IDA_Y_VUELTA:
         return False
     return margen <= x <= ancho - 1 - margen and margen <= y <= alto - 1 - margen
 

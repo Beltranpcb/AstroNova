@@ -501,3 +501,12 @@ def prueba_sin_tap_ni_listado_guardado_se_explora_s3(tmp_path, monkeypatch):
 
     with pytest.raises(RuntimeError, match="S3"):
         consulta_sia.consultar_campo(campo, consulta=sin_red, explorar_s3=s3_roto)
+
+
+def prueba_cubre_no_se_deja_enganar_por_la_inversion_sip_que_diverge():
+    """Regresión con cabeceras reales: 0214_3_D2 mira a ~50° de sphx_a; antes «cubría» el campo."""
+    reales = json.loads((Path(__file__).with_name("cabeceras_reales.json")).read_text(encoding="utf-8"))["cabeceras"]
+    lejos, cerca = reales["2025W48_1A_0214_3_D2"], reales["2025W48_1A_0272_1_D2"]
+    assert not indice_s3.cubre(lejos, 160.617, 30.67, 0.2)
+    assert indice_s3.cubre(cerca, 160.617, 30.67, 0.2)
+    assert indice_s3.separacion_grados(10.0, 0.0, 10.0, 1.0) == pytest.approx(1.0)
