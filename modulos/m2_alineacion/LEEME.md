@@ -37,6 +37,8 @@ Poner las tres imágenes de un campo en la misma rejilla de píxeles.
 | `metadatos_campo.py` | Escribe meta.json con los datos del campo alineado. |
 | `exportacion_png.py` | Exporta las imágenes PNG que la web muestra. |
 | `pruebas/prueba_alineacion.py` | Comprueba la alineación sobre imágenes sintéticas con estrellas desplazadas. |
+| `esquemas/meta.schema.json` | Copia del contrato `contratos/meta.schema.json` para verificar el módulo suelto. |
+| `pytest.ini` | Declara el nombrado en español de las pruebas cuando el módulo se ejecuta suelto. |
 
 ## Orden de ejecución
 
@@ -68,4 +70,4 @@ Las tres imágenes deben venir del mismo detector para que el brillo sea compara
 
 ## Estado
 
-Esqueleto sin código: el comando de verificación falla hasta que el lote implemente el módulo.
+Implementado. El comando de verificación pasa sobre imágenes sintéticas (cinco estrellas fijas con el WCS desplazado una fracción de píxel, más un objeto móvil). La reproyección usa `astropy.wcs` con `scipy.ndimage.map_coordinates` en lugar de la biblioteca `reproject`, que no está en `requirements.txt`. Pendiente de probar sobre un recorte real de SPHEREx: en especial que la extensión `ZODI` exista con ese nombre y que el WCS de `IMAGE` sea celeste 2D.
