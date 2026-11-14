@@ -134,9 +134,41 @@
   <!-- Análisis de objetos -->
   <div id="vista-analisis" class="analisis" hidden>
     <div class="pestanas" role="tablist" aria-label="Herramientas de análisis">
+      <button id="pestana-catalogo" role="tab" aria-selected="true" class="activo">Catálogo</button>
       <button id="pestana-identificar" role="tab" aria-selected="false">Identificar</button>
-      <button id="pestana-comparar" role="tab" aria-selected="true" class="activo">Comparar espectros</button>
+      <button id="pestana-comparar" role="tab" aria-selected="false">Comparar espectros</button>
     </div>
+
+    <section id="panel-catalogo" class="panel analisis-panel" role="tabpanel">
+      <h2>Catálogo de objetos</h2>
+      <p class="aviso-conceptual">
+        Solo objetos detectados por HUELLA X en los campos publicados. Cada uno indica qué datos
+        existen de verdad; la clase viene de un catálogo, no del espectro.
+      </p>
+      <div class="cmp-controles">
+        <label>Buscar <input id="cat-buscar" type="search" placeholder="nombre, designación o id" aria-label="Buscar en el catálogo"></label>
+        <label>Clase <select id="cat-clase" aria-label="Filtrar por clase"></select></label>
+        <label>Identificación
+          <select id="cat-ident" aria-label="Filtrar por identificación">
+            <option value="">Todas</option>
+            <option value="conocido">Conocidos</option>
+            <option value="sin_identificar">Sin identificar</option>
+          </select>
+        </label>
+        <label><input id="cat-con-espectro" type="checkbox"> Solo con espectro</label>
+        <span class="cmp-meta" id="cat-cuenta"></span>
+      </div>
+      <p class="vacio" id="cat-estado" role="status"></p>
+      <div class="cat-rejilla">
+        <div class="tabla-scroll cat-lista">
+          <table>
+            <thead><tr><th>Objeto</th><th>Designación</th><th>Clase · identificación</th><th>Datos disponibles</th></tr></thead>
+            <tbody id="cat-cuerpo"></tbody>
+          </table>
+        </div>
+        <div id="cat-ficha" class="cat-ficha"><p class="vacio">Selecciona un objeto del catálogo.</p></div>
+      </div>
+    </section>
 
     <section id="panel-identificar" class="panel analisis-panel" role="tabpanel" hidden>
       <h2>Identificar objeto</h2>
@@ -147,7 +179,7 @@
       </p>
     </section>
 
-    <section id="panel-comparar" class="panel analisis-panel" role="tabpanel">
+    <section id="panel-comparar" class="panel analisis-panel" role="tabpanel" hidden>
       <h2>Comparar espectros</h2>
       <p class="aviso-conceptual" id="cmp-aviso-conceptual">
         Aquí se comparan <b>dos espectros observados</b> entre sí. No es una clasificación ni una
@@ -196,6 +228,8 @@
 <script src="comparador_logica.js"></script>
 <script src="analisis.js"></script>
 <script src="comparador.js"></script>
+<script src="catalogo_logica.js"></script>
+<script src="catalogo.js"></script>
 <script>
   const portada = document.getElementById("portada");
   const app = document.getElementById("app");

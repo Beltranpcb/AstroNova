@@ -37,6 +37,7 @@ if str(RAIZ) not in sys.path:
 from modulos.m7_publicacion.control_publicacion import validar  # noqa: E402
 from modulos.m7_publicacion.copia_publicable import copiar_campo  # noqa: E402
 from modulos.m7_publicacion.indice_campos import escribir_campos  # noqa: E402
+from modulos.m7_publicacion import indice_catalogo  # noqa: E402
 from modulos.m7_publicacion.union_candidatos import unir_campo  # noqa: E402
 
 CAMPO = "campo_ejemplo"
@@ -343,3 +344,73 @@ def prueba_copia_plantillas_si_existen_y_no_falla_si_faltan(raiz_datos):
     shutil.copyfile(EJEMPLOS / "plantillas.json", origen)
     copiar_campo(CAMPO, str(raiz_datos))
     assert resumen(raiz_datos / "m7_publicacion" / "plantillas.json") == resumen(origen)
+
+
+# -------------------------------------------------------------- catálogo
+def _punto(lam, flujo, error=0.1):
+    return {"longitud_onda_micras": lam, "flujo_mjy": flujo, "error_mjy": error, "mjd": 60900.0, "detector": 1}
+
+
+def prueba_catalogo_coincide_con_el_ejemplo_y_valida(publicado):
+    import jsonschema
+    ruta = indice_catalogo.escribir_catalogo(str(publicado))
+    obtenido = leer_json(ruta)
+    jsonschema.Draft202012Validator(leer_json(CONTRATOS / "catalogo.schema.json")).validate(obtenido)
+    assert sin_comentario(obtenido) == sin_comentario(leer_json(EJEMPLOS / "catalogo.json"))
+
+
+def prueba_catalogo_excluye_artefactos_y_no_inventa_espectros(publicado):
+    objetos = {o["id_candidato"]: o for o in leer_json(indice_catalogo.escribir_catalogo(str(publicado)))["objetos"]}
+    assert "p002" not in objetos  # artefacto descartado
+    candidatos = leer_json(publicado / "m7_publicacion" / CAMPO / "candidatos.json")
+    for c in candidatos["candidatos"]:
+        if c["id_candidato"] in objetos:
+            tiene = objetos[c["id_candidato"]]["datos"]["espectro"] in ("real", "sintetico", "no_declarado")
+            assert tiene == c["tiene_espectro"]
+
+
+def prueba_estado_del_espectro_segun_origen_y_estado():
+    conocido, nuevo = {"estado": "conocido"}, {"estado": "sin_identificar"}
+    puntos = [_punto(1, 1), _punto(2, 1)]
+    assert indice_catalogo.estado_espectro(conocido, {"origen": "real"}, puntos, {}) == "real"
+    assert indice_catalogo.estado_espectro(conocido, {}, puntos, {"origen": "sintetico"}) == "sintetico"
+    assert indice_catalogo.estado_espectro(conocido, {}, puntos, {}) == "no_declarado"  # nunca se supone real
+    assert indice_catalogo.estado_espectro(conocido, None, [], {}) == "pendiente"
+    assert indice_catalogo.estado_espectro(nuevo, None, [], {}) == "ninguno"
+
+
+def prueba_designacion_solo_si_el_nombre_la_trae():
+    assert indice_catalogo.designacion_de("(1766) Slipher") == "1766"
+    assert indice_catalogo.designacion_de("3I/ATLAS") == "3I"
+    assert indice_catalogo.designacion_de("1P/Halley") == "1P"
+    assert indice_catalogo.designacion_de("Luhman 16 A") is None
+    assert indice_catalogo.designacion_de(None) is None
+
+
+def prueba_similitud_mide_la_forma_no_la_escala():
+    a = [_punto(1.0 + 0.5 * i, 1.0 + 0.2 * i, 0.05) for i in range(7)]
+    b = [{**p, "flujo_mjy": 3 * p["flujo_mjy"], "error_mjy": 3 * p["error_mjy"]} for p in a]
+    plano = [{**p, "flujo_mjy": 1.0} for p in a]
+    assert indice_catalogo.similitud(a, b)["valor"] == 0.0  # misma forma, otra escala
+    assert indice_catalogo.similitud(a, plano)["valor"] > 1.0
+    medida = indice_catalogo.similitud(a, b)
+    assert medida["rango_comun_micras"] == [1.0, 4.0] and medida["n_puntos"] == 7
+
+
+def prueba_similitud_exige_solape_y_puntos():
+    a = [_punto(1.0, 1), _punto(1.2, 1), _punto(1.4, 1)]
+    b = [_punto(3.0, 1), _punto(4.0, 1)]
+    assert indice_catalogo.similitud(a, b) is None                      # sin solape
+    c = [_punto(1.0, 1), _punto(3.0, 1)]
+    d = [_punto(1.0, 1), _punto(3.0, 1)]
+    assert indice_catalogo.similitud(c, d) is None                      # menos de 3 puntos comunes
+
+
+def prueba_misma_clasificacion_solo_con_clase_catalogada():
+    def entrada(ide, clase):
+        return {"objeto": {"id_objeto": ide, "clasificacion": clase}, "puntos": []}
+    entradas = [entrada("c/p001", "asteroide"), entrada("c/p002", "asteroide"), entrada("c/p003", "desconocida"),
+                entrada("c/p004", "desconocida")]
+    indice_catalogo.relacionar(entradas)
+    assert entradas[0]["objeto"]["relacionados"]["misma_clasificacion"] == ["c/p002"]
+    assert entradas[2]["objeto"]["relacionados"]["misma_clasificacion"] == []  # «desconocida» no agrupa

@@ -30,7 +30,7 @@
 
   const est = {
     cargado: false,
-    cargando: false,
+    promesa: null,
     objetos: [],
     sinEspectro: 0,
     a: null,
@@ -49,9 +49,13 @@
   const objetoPorId = (id) => est.objetos.find((o) => o.id_objeto === id) || null;
 
   // ------------------------------------------------------------------ carga
-  async function cargarTodo() {
-    if (est.cargado || est.cargando) return;
-    est.cargando = true;
+  // Una sola carga aunque la pidan a la vez la pestaña y el catálogo.
+  function cargarTodo() {
+    if (!est.promesa) est.promesa = cargarTodoUnaVez();
+    return est.promesa;
+  }
+
+  async function cargarTodoUnaVez() {
     estado("Cargando espectros de todos los campos…");
     try {
       const campos = [];
@@ -83,10 +87,21 @@
     } catch (error) {
       console.error(error);
       estado("Error al leer los datos publicados. Sirve la web con un servidor local y recarga.");
-    } finally {
-      est.cargando = false;
     }
   }
+
+  /** Abre el comparador con A y B elegidos (B puede ser null). Lo usa el catálogo. */
+  HX.abrirComparacion = async function (idA, idB) {
+    HX.mostrarVista("analisis");
+    await cargarTodo();
+    est.a = objetoPorId(idA) ? idA : est.a;
+    est.b = idB && objetoPorId(idB) ? idB : null;
+    if (est.modo === "plantillas" && est.b) est.modo = "flujo";
+    est.x = null;
+    pintarSelectores();
+    HX.mostrarPestana("comparar");
+    refrescar();
+  };
 
   function estado(texto) {
     const el = $("cmp-estado");

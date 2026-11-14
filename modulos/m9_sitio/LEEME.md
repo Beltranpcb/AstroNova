@@ -18,6 +18,7 @@ Mostrar al público qué se mueve en cada campo, con la naturaleza de cada objet
 - `datos/m7_publicacion/<campo>/{meta,candidatos,espectros}.json`
 - Opcionalmente `datos/m7_publicacion/<campo>/{epoca_a,epoca_b,diferencia}.png`
 - Opcionalmente `datos/m7_publicacion/plantillas.json` (curvas de referencia)
+- Opcionalmente `datos/m7_publicacion/catalogo.json` (catálogo navegable, de `m7_publicacion/indice_catalogo.py`)
 - Aladin Lite y Chart.js, cargados por CDN
 - `contratos/guia_visual.md` (variables de color)
 
@@ -50,6 +51,8 @@ el código de otro.
 | `analisis.js` | Alterna entre explorador y «Análisis de objetos» y gestiona sus pestañas. |
 | `comparador_logica.js` | Lógica pura del comparador: objetos con espectro válido, normalización y compatibilidad. |
 | `comparador.js` | Dibuja el comparador de espectros (selectores, gráfico con incertidumbres, avisos, CSV y PNG). |
+| `catalogo_logica.js` | Lógica pura del catálogo: búsqueda, filtros y textos de cada objeto. |
+| `catalogo.js` | Dibuja el catálogo navegable, la ficha del objeto y sus dos listas de relacionados. |
 | `ejemplos/generar_datos.py` | Genera datos de demostración conformes a los contratos. |
 | `pruebas/lista_visual.md` | Comprobaciones manuales de la web. |
 
@@ -69,7 +72,15 @@ de modo que funciona tanto servida desde la raíz como desde su propio directori
 ## Análisis de objetos
 
 La cabecera tiene dos secciones: **Explorador** y **Análisis de objetos**. Esta última
-tiene dos pestañas:
+tiene tres pestañas:
+
+- **Catálogo** (la primera): los objetos detectados en los campos publicados, con búsqueda,
+  filtros por clase, identificación y espectro. Cada objeto declara qué datos existen de verdad
+  (imagen, trayectoria, espectro real, de demostración, de origen no declarado o pendiente). La
+  ficha muestra la clasificación con su fuente, el espectro si existe y **dos listas separadas**:
+  «Misma clasificación» (clase catalogada) y «Espectros más similares» (χ² reducido entre formas
+  calculado por m7). «Comparar» abre el comparador con los dos objetos; «Ver en el explorador»
+  abre el campo con el candidato seleccionado. Los artefactos descartados no entran.
 
 - **Comparar espectros**: compara dos espectros observados. Solo se listan objetos con
   al menos dos puntos válidos; se puede ver el flujo medido (mJy) o normalizado
@@ -90,6 +101,7 @@ Mientras el pipeline no produce datos reales:
 
 ```bash
 python modulos/m9_sitio/ejemplos/generar_datos.py
+python -m modulos.m7_publicacion.indice_catalogo     # catálogo navegable sobre esos datos
 ```
 
 Escribe en `datos/m7_publicacion/` tres campos (`slipher`, `atlas`, `luhman`) con
@@ -109,7 +121,7 @@ curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8765/modulos/m9_sitio/
 Pruebas de lógica:
 
 ```bash
-node --test modulos/m9_sitio/pruebas/prueba_sitio.js modulos/m9_sitio/pruebas/prueba_comparador.js
+node --test modulos/m9_sitio/pruebas/prueba_sitio.js modulos/m9_sitio/pruebas/prueba_comparador.js modulos/m9_sitio/pruebas/prueba_catalogo.js
 ```
 
 Comprobaciones manuales: `pruebas/lista_visual.md`.
