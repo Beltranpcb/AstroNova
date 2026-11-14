@@ -5,7 +5,21 @@
    web y el juego se vean como una sola pieza.
    ========================================================================== */
 
-.juego-envoltorio { position: relative; }
+.juego-envoltorio {
+  position: relative;
+  width: min(100%, 760px);
+  /* La columna nunca es más alta que la ventana: cabecera + barra + lienzo + pie. */
+  max-width: min(760px, calc(70vh + 2rem));
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+/* Todo comparte una sola columna, así la barra y el pie no sobresalen del lienzo. */
+.juego-lienzo-caja,
+.juego-barra,
+.juego-pie { width: 100%; margin-left: auto; margin-right: auto; }
+
+.juego-lienzo-caja { position: relative; }
 
 /* El panel de ronda y el resultado se superponen al lienzo. Estas reglas estaban
    en la hoja antigua de la web y se perdieron al reescribir estilo.css: sin
@@ -54,7 +68,13 @@
   align-items: center;
 }
 
-#juego-lienzo { border-radius: 0; }
+#juego-lienzo {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 0;
+  touch-action: none;
+}
 
 .juego-pie #btn-pista:disabled {
   opacity: .4;
