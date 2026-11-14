@@ -337,3 +337,22 @@ def prueba_un_archivo_que_no_es_fits_se_rechaza(tmp_path):
 def prueba_un_nombre_de_recorte_con_ruta_se_rechaza():
     with pytest.raises(ValueError):
         descarga_recortes._nombre_seguro("../fuera.fits")
+
+def prueba_sin_red_se_usa_el_listado_guardado(tmp_path, monkeypatch):
+    campo = {"campo": "campo_cache", "nombre": "Con caché", "ra_grados": 10.0,
+             "dec_grados": 20.0, "radio_grados": 0.2}
+    guardado = {"campo": "campo_cache", "nombre": "Con caché",
+                "centro": {"ra_grados": 10.0, "dec_grados": 20.0}, "radio_grados": 0.2,
+                "exposiciones": [{"identificador": "x1", "t_min": 61000.0, "detector": 1,
+                                  "access_url": "https://x/1.fits", "coleccion": "spherex_dr1"}]}
+    destino = tmp_path / "campo_cache"
+    destino.mkdir()
+    (destino / "listado_exposiciones.json").write_text(json.dumps(guardado), encoding="utf-8")
+
+    monkeypatch.setattr(consulta_sia, "DIR_DATOS", tmp_path)
+
+    def sin_red(*_a, **_k):
+        raise RuntimeError("TAP caído")
+
+    listado = consulta_sia.consultar_campo(campo, consulta=sin_red)
+    assert listado["exposiciones"][0]["identificador"] == "x1"

@@ -232,6 +232,17 @@ def consultar_campo(campo: dict, consulta=consultar_tap) -> dict:
             errores.append(str(error))
             print(f"AVISO: {error}", file=sys.stderr)
     if len(errores) == len(COLECCIONES):
+        # El archivo de IRSA se cae de vez en cuando (TAP acepta la petición y no
+        # ejecuta la consulta). Si ya hay un listado del campo se usa ese: la demo
+        # funciona sin red, como manda el diseño (todo precalculado).
+        guardado = DIR_DATOS / campo["campo"] / "listado_exposiciones.json"
+        if guardado.is_file():
+            print(
+                "AVISO: TAP no responde; se usa el listado guardado en %s" % guardado,
+                file=sys.stderr,
+            )
+            with open(guardado, encoding="utf-8") as f:
+                return json.load(f)
         raise RuntimeError("Ninguna colección respondió:\n  " + "\n  ".join(errores))
     listado = construir_listado(campo, filas)
     if not listado["exposiciones"]:
