@@ -37,6 +37,7 @@ Construir el espectro infrarrojo de cada objeto en movimiento para estimar su na
 | `plantillas.json` | Contiene los espectros de referencia de los cuatro tipos de objeto. |
 | `comparacion_plantillas.py` | Asigna al espectro medido el tipo de la plantilla más parecida. |
 | `ajuste_planck.py` | Estima la temperatura del objeto ajustando la ley de Planck. |
+| `identificacion_molecular.py` | Evalúa banda por banda rasgos de H2O, CH4, CO2, CO y NH3 con estados sin_rasgo, compatible, candidata, detectada o datos_insuficientes. |
 | `escritura_espectros.py` | Reúne medida, tipo, temperatura en el archivo del contrato. |
 | `pruebas/prueba_huella_espectral.py` | Comprueba el ajuste espectral sobre espectros sintéticos. |
 | `esquemas/espectros.schema.json` | Copia del contrato `contratos/espectros.schema.json` para verificar el módulo suelto. |
@@ -50,6 +51,7 @@ python -m modulos.m6_huella_espectral.trayectoria <campo>
 python -m modulos.m6_huella_espectral.fotometria <campo>
 python -m modulos.m6_huella_espectral.comparacion_plantillas <campo>
 python -m modulos.m6_huella_espectral.ajuste_planck <campo>
+python -m modulos.m6_huella_espectral.identificacion_molecular <campo>
 python -m modulos.m6_huella_espectral.escritura_espectros <campo>
 ```
 
@@ -81,3 +83,28 @@ Las curvas de `plantillas.json` son sintéticas: reproducen los rasgos de la
 especificación (silicatos, hidratación, hielo de agua, CO₂, CO, metano), no son
 espectros de referencia medidos. Sirven para comparar formas y deben sustituirse
 por curvas de bibliografía antes de publicar.
+
+## Composición molecular (identificacion_molecular.py)
+
+Una ventana por molécula dentro de 0,75-5 µm (H2O 2,85-3,15; CH4 3,20-3,45; CO2 4,20-4,33;
+CO 4,55-4,75; NH3 2,17-2,27), orientativa y con su referencia. El continuo es local: un polinomio
+de grado 2 con los 6 puntos más cercanos a cada lado que no caen en ninguna banda (hasta 0,8 µm;
+si una banda vecina tapa el flanco, se salta). Un continuo global confunde la curvatura térmica
+con un rasgo. El rasgo es la media pesada de F - C dentro de la banda,
+con el error del continuo sumado entero (está correlacionado entre puntos). La métrica es la
+significancia S en sigmas, con un grado de libertad.
+
+| Estado | Regla |
+|---|---|
+| `datos_insuficientes` | Espectro promediado por detector, menos de 8 puntos, sin continuo a los dos lados de la banda o menos de 2 puntos dentro. |
+| `sin_rasgo` | abs(S) < 2: no confirma ni descarta la molécula. |
+| `compatible` | 2 ≤ abs(S) < 3. |
+| `candidata` | 3 ≤ abs(S) < 5, o abs(S) ≥ 5 sin cumplir todo lo de abajo. |
+| `detectada` | abs(S) ≥ 5 también con una recta y 3 puntos a cada lado, ≥ 3 puntos, banda de ≥ 2 elementos de resolución, sentido esperado para el tipo (emisión en cometas para H2O, CO2 y CO; absorción en el resto) y ninguna alternativa física para ese tipo. |
+
+Alternativas consideradas: minerales hidratados (OH) para H2O en asteroides, hidrocarburos C-H para
+CH4 en cometas, la banda de CH4 a 2,3 µm para NH3. Con tipo indeterminado nada pasa de candidata.
+La resolución es la nominal de SPHEREx (R ≈ 41 hasta 2,4 µm, 35 hasta 3,8, 110 hasta 4,4 y 130 hasta 5).
+No se interpola para ganar resolución. Prueba de falsos positivos: 270 espectros sintéticos sin rasgos
+(continuo lineal, térmico y de luz reflejada, tres tipos de objeto) no dan ninguna candidata ni detección.
+La validación con observaciones reales está pendiente.

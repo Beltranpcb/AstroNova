@@ -475,3 +475,130 @@ def prueba_espectros_json_trae_calidad_advertencias_y_plantillas_publicadas(tmp_
     jsonschema.Draft202012Validator(ESQUEMA_PLANTILLAS).validate(publicadas)
     assert {p["tipo"] for p in publicadas["plantillas"]} == {"asteroide_rocoso", "asteroide_oscuro", "cometa", "enana_marron"}
     assert all(p["origen_plantilla"] == "sintetica" for p in publicadas["plantillas"])
+
+
+# ------------------------------------------- composición molecular (sintética)
+from modulos.m6_huella_espectral import identificacion_molecular as im  # noqa: E402
+
+LAM_DENSA = np.linspace(0.75, 5.0, 120)  # ~0,036 µm entre puntos: espectro sintético por banda
+
+
+def _espectro_molecular(rasgos=(), continuo=None, ruido=0.01, semilla=7):
+    """Espectro sintético: continuo + rasgos de caja (ventana, profundidad) + ruido gaussiano."""
+    azar = np.random.default_rng(semilla)
+    base = 1.0 + 0.1 * LAM_DENSA if continuo is None else continuo(LAM_DENSA)
+    flujo = base.copy()
+    for (bajo, alto), profundidad in rasgos:
+        flujo[(LAM_DENSA >= bajo) & (LAM_DENSA <= alto)] += profundidad
+    flujo += azar.normal(0.0, ruido, LAM_DENSA.size)
+    return [{"longitud_onda_micras": float(l), "flujo_mjy": float(f), "error_mjy": ruido, "mjd": 60900.0, "detector": 1}
+            for l, f in zip(LAM_DENSA, flujo)]
+
+
+def _estados(composicion):
+    return {m["formula"]: m["estado"] for m in composicion["moleculas"]}
+
+
+def _molecula(composicion, formula):
+    return next(m for m in composicion["moleculas"] if m["formula"] == formula)
+
+
+def prueba_banda_aislada_de_co2_se_detecta_en_un_asteroide():
+    c = im.analizar(_espectro_molecular([((4.20, 4.33), -0.08)]), tipo="asteroide_rocoso")
+    co2 = _molecula(c, "CO2")
+    assert co2["estado"] == "detectada" and co2["rasgo"] == "absorcion", co2["explicacion"]
+    assert co2["metrica"]["nombre"] == "significancia_sigma" and co2["metrica"]["valor"] < -5
+    assert co2["resolucion_espectral"] == 110
+    assert _estados(c)["CH4"] == "sin_rasgo"
+
+
+def prueba_en_un_cometa_el_co2_debe_verse_en_emision():
+    emision = _molecula(im.analizar(_espectro_molecular([((4.20, 4.33), 0.08)]), tipo="cometa"), "CO2")
+    assert emision["estado"] == "detectada" and emision["rasgo"] == "emision", emision["explicacion"]
+    absorcion = _molecula(im.analizar(_espectro_molecular([((4.20, 4.33), -0.08)]), tipo="cometa"), "CO2")
+    assert absorcion["estado"] == "candidata"
+    assert "se esperaba emision" in absorcion["explicacion"]
+
+
+def prueba_el_ruido_puro_no_produce_detecciones():
+    for semilla in range(5):
+        estados = _estados(im.analizar(_espectro_molecular(semilla=semilla), tipo="asteroide_rocoso"))
+        assert "detectada" not in estados.values() and "candidata" not in estados.values(), (semilla, estados)
+
+
+def prueba_un_continuo_curvo_sin_bandas_no_produce_falsos_positivos():
+    def termico(lam):
+        return 0.4 + 0.02 * np.exp(0.9 * lam)  # subida térmica hacia 5 µm
+    estados = _estados(im.analizar(_espectro_molecular(continuo=termico), tipo="asteroide_oscuro"))
+    assert "detectada" not in estados.values(), estados
+
+
+def prueba_el_agua_en_un_asteroide_queda_ambigua_con_minerales_hidratados():
+    agua = _molecula(im.analizar(_espectro_molecular([((2.85, 3.15), -0.10)]), tipo="asteroide_oscuro"), "H2O")
+    assert agua["estado"] == "candidata"
+    assert agua["ambigua_con"] == ["minerales_hidratados_OH"]
+    assert "otra explicación plausible" in agua["explicacion"]
+
+
+def prueba_con_tipo_indeterminado_nada_pasa_de_candidata():
+    c = im.analizar(_espectro_molecular([((4.20, 4.33), -0.08)]), tipo="indeterminado")
+    assert _molecula(c, "CO2")["estado"] == "candidata"
+
+
+def prueba_una_banda_sin_resolver_no_se_declara_detectada():
+    nh3 = _molecula(im.analizar(_espectro_molecular([((2.17, 2.27), -0.10)]), tipo="enana_marron"), "NH3")
+    assert nh3["estado"] != "detectada"
+    assert "resolucion_incompatible" in nh3["advertencias"]
+
+
+def prueba_espectro_por_detector_o_corto_da_datos_insuficientes():
+    por_detector = im.analizar(_espectro_molecular([((4.20, 4.33), -0.08)]), agrupacion="detector", tipo="cometa")
+    assert set(_estados(por_detector).values()) == {"datos_insuficientes"}
+    assert all("agrupado_por_detector" in m["advertencias"] for m in por_detector["moleculas"])
+    corto = im.analizar(_espectro_molecular()[:5], tipo="cometa")
+    assert set(_estados(corto).values()) == {"datos_insuficientes"}
+    assert all(m["metrica"] is None for m in corto["moleculas"])
+
+
+def prueba_cobertura_parcial_deja_fuera_las_bandas_sin_puntos():
+    puntos = [p for p in _espectro_molecular() if p["longitud_onda_micras"] < 3.0]
+    estados = _estados(im.analizar(puntos, tipo="asteroide_rocoso"))
+    assert estados["CO2"] == estados["CO"] == estados["CH4"] == "datos_insuficientes"
+
+
+def prueba_la_composicion_llega_a_espectros_json_y_valida(tmp_path):
+    directorio = tmp_path / "m6_huella_espectral" / "campo_prueba"
+    directorio.mkdir(parents=True)
+    puntos = _espectro_molecular([((4.20, 4.33), 0.08)])
+    (directorio / "espectro_medido.json").write_text(json.dumps({
+        "campo": "campo_prueba", "espectros": [{"id_pareja": "p001", "agrupacion": "banda", "puntos": puntos}]}), encoding="utf-8")
+    comparacion_plantillas.clasificar_campo("campo_prueba", raiz_datos=tmp_path)
+    ajuste_planck.ajustar_campo("campo_prueba", raiz_datos=tmp_path)
+    im.analizar_campo("campo_prueba", raiz_datos=tmp_path)
+    datos = json.loads(escritura_espectros.escribir_campo("campo_prueba", raiz_datos=tmp_path).read_text(encoding="utf-8"))
+    jsonschema.Draft202012Validator(ESQUEMA_ESPECTROS).validate(datos)
+    composicion = datos["espectros"][0]["composicion"]
+    assert [m["formula"] for m in composicion["moleculas"]] == ["H2O", "CH4", "CO2", "CO", "NH3"]
+    assert all(m["referencia"] for m in composicion["moleculas"])
+
+
+def prueba_bandas_vecinas_de_agua_y_metano_se_miden_por_separado():
+    """En una enana marrón con H2O y CH4 a la vez, cada banda se mide con su propio continuo."""
+    c = im.analizar(_espectro_molecular([((2.85, 3.15), -0.10), ((3.20, 3.45), -0.12)]), tipo="enana_marron")
+    estados = _estados(c)
+    assert estados["H2O"] in ("candidata", "detectada") and estados["CH4"] in ("candidata", "detectada"), estados
+    solo_metano = _estados(im.analizar(_espectro_molecular([((3.20, 3.45), -0.12)]), tipo="enana_marron"))
+    assert solo_metano["H2O"] in ("sin_rasgo", "compatible"), solo_metano  # el CH4 no contamina al H2O
+
+
+def prueba_un_desplazamiento_pequeno_de_la_banda_sigue_dentro_de_la_ventana():
+    """Temperatura o entorno pueden mover la banda unas centésimas de micra."""
+    desplazada = _molecula(im.analizar(_espectro_molecular([((4.24, 4.33), -0.08)]), tipo="asteroide_rocoso"), "CO2")
+    assert desplazada["estado"] in ("candidata", "detectada") and desplazada["rasgo"] == "absorcion"
+
+
+def prueba_ningun_estado_usa_porcentajes_de_confianza():
+    c = im.analizar(_espectro_molecular([((4.20, 4.33), -0.08)]), tipo="asteroide_rocoso")
+    for m in c["moleculas"]:
+        assert m["metrica"] is None or m["metrica"]["nombre"] == "significancia_sigma"
+        assert "confianza" not in m["explicacion"].lower()

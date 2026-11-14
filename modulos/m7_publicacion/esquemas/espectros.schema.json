@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "contratos/espectros.schema.json",
   "title": "espectros.json: huella espectral de cada pareja candidata",
-  "$comment": "ARCHIVO: contratos/espectros.schema.json. ROL: fija la forma de espectros.json: huella espectral de cada pareja candidata. PRODUCTOR: m6_huella_espectral/escritura_espectros.py. CONSUMIDORES: m7_publicacion, m9_sitio. RUTA REAL: datos/m6_huella_espectral/<campo>/espectros.json, copiado a datos/m7_publicacion/<campo>/espectros.json. VERIFICACION: check-jsonschema --schemafile contratos/espectros.schema.json <archivo>. No contiene lógica: solo describe datos. AMPLIACION COMPATIBLE (version_contrato 1): origen, advertencias, calidad, composicion y, en ajustes_plantilla, grados_libertad, n_puntos, origen_plantilla, referencia_plantilla; todos opcionales. Tambien opcional: escala en ajustes_plantilla.",
+  "$comment": "ARCHIVO: contratos/espectros.schema.json. ROL: fija la forma de espectros.json: huella espectral de cada pareja candidata. PRODUCTOR: m6_huella_espectral/escritura_espectros.py. CONSUMIDORES: m7_publicacion, m9_sitio. RUTA REAL: datos/m6_huella_espectral/<campo>/espectros.json, copiado a datos/m7_publicacion/<campo>/espectros.json. VERIFICACION: check-jsonschema --schemafile contratos/espectros.schema.json <archivo>. No contiene lógica: solo describe datos. AMPLIACION COMPATIBLE (version_contrato 1): origen, advertencias, calidad, composicion y, en ajustes_plantilla, grados_libertad, n_puntos, origen_plantilla, referencia_plantilla; todos opcionales. Tambien opcional: escala en ajustes_plantilla. Tambien opcional: estado sin_rasgo, rasgo y resolucion_espectral en composicion.moleculas.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -323,8 +323,9 @@
                       "description": "Intervalo de la banda de referencia. Orientativo, no es un umbral rígido."
                     },
                     "estado": {
-                      "description": "compatible < candidata < detectada. datos_insuficientes cuando no hay puntos, cobertura o calidad para decidir. detectada exige criterios estadísticos predefinidos.",
+                      "description": "sin_rasgo: la banda está cubierta y no hay rasgo significativo; no confirma ni descarta la molécula por debajo del límite. compatible < candidata < detectada: evidencia creciente de un rasgo en la banda. datos_insuficientes: no hay puntos, cobertura o resolución para decidir. detectada exige criterios estadísticos predefinidos y ninguna alternativa plausible.",
                       "enum": [
+                        "sin_rasgo",
                         "compatible",
                         "candidata",
                         "detectada",
@@ -397,6 +398,22 @@
                         ]
                       },
                       "uniqueItems": true
+                    },
+                    "rasgo": {
+                      "description": "Sentido del rasgo medido respecto al continuo. Nulo si no hay rasgo o datos.",
+                      "enum": [
+                        "absorcion",
+                        "emision",
+                        null
+                      ]
+                    },
+                    "resolucion_espectral": {
+                      "type": [
+                        "number",
+                        "null"
+                      ],
+                      "exclusiveMinimum": 0,
+                      "description": "R = lambda / delta lambda de SPHEREx en el centro de la banda."
                     }
                   }
                 }
