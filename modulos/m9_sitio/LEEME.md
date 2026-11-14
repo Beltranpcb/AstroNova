@@ -55,6 +55,8 @@ el código de otro.
 | `catalogo.js` | Dibuja el catálogo navegable, la ficha del objeto y sus dos listas de relacionados. |
 | `composicion_logica.js` | Lógica pura de «Composición espectral»: cuándo se muestra, orden y textos. |
 | `composicion.js` | Dibuja «Composición espectral» en la ficha del explorador y en la del catálogo. |
+| `identificar_logica.js` | Lógica pura de «Identificar»: proyección TAN, lienzo <-> píxel, detección cercana y lectura de SkyBoT. |
+| `identificar.js` | Pestaña «Identificar»: clic en la imagen, coordenadas, detección marcada y efemérides de SkyBoT. |
 | `ejemplos/generar_datos.py` | Genera datos de demostración conformes a los contratos. |
 | `pruebas/lista_visual.md` | Comprobaciones manuales de la web. |
 
@@ -93,7 +95,12 @@ tiene tres pestañas:
   con la escala del ajuste de m6, y la tabla de χ² reducido con grados de libertad, puntos y
   origen. Se redacta como «más compatible con la plantilla X entre las evaluadas»; si m6 dejó
   el tipo indeterminado, la web no elige ninguna.
-- **Identificar**: pendiente. Necesita el WCS del campo y la consulta de catálogos.
+- **Identificar**: clic en la imagen del campo (zoom y arrastre). El píxel se convierte en RA/DEC con
+  `meta.wcs` (proyección TAN, comprobada contra astropy); sin WCS se avisa y no se inventan coordenadas.
+  Un clic cerca de una detección marcada la selecciona y muestra su identificación de m5. «Consultar
+  efemérides» pregunta en vivo a SkyBoT (IMCCE) qué asteroides, planetas o cometas conocidos estaban allí
+  en la fecha de la época A, con separación, error de la efeméride, tolerancia y veredicto (compatible,
+  ambigua o sin coincidencia concluyente). Gaia DR3 queda pendiente: sus archivos no admiten CORS.
 
 Los datos de demostración llevan `origen: "sintetico"` y la web lo muestra en cada objeto.
 

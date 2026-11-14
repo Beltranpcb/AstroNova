@@ -223,16 +223,38 @@ def espectro(cand: dict, mjd: float) -> dict | None:
     }
 
 
+def wcs_de(campo: dict, ancho: int, alto: int, escala: float) -> dict:
+    """WCS TAN de demostración: centro del campo en el centro de la rejilla, norte arriba, este a la izquierda."""
+    grados = escala / 3600.0
+    return {"proyeccion": "TAN", "crval_ra_grados": campo["centro"]["ra_grados"],
+            "crval_dec_grados": campo["centro"]["dec_grados"],
+            "crpix_x": (ancho - 1) / 2.0, "crpix_y": (alto - 1) / 2.0, "cd": [[-grados, 0.0], [0.0, grados]]}
+
+
+def cielo(wcs: dict, x: float, y: float) -> tuple[float, float]:
+    """Proyección gnomónica inversa (la misma que usa la web), para que las posiciones casen con el WCS."""
+    dx, dy = x - wcs["crpix_x"], y - wcs["crpix_y"]
+    xi = math.radians(wcs["cd"][0][0] * dx + wcs["cd"][0][1] * dy)
+    eta = math.radians(wcs["cd"][1][0] * dx + wcs["cd"][1][1] * dy)
+    a0, d0 = math.radians(wcs["crval_ra_grados"]), math.radians(wcs["crval_dec_grados"])
+    den = math.cos(d0) - eta * math.sin(d0)
+    ra = a0 + math.atan2(xi, den)
+    dec = math.atan2(math.sin(d0) + eta * math.cos(d0), math.hypot(xi, den))
+    return round(math.degrees(ra) % 360.0, 6), round(math.degrees(dec), 6)
+
+
 def construir(campo: dict) -> tuple[dict, dict, dict]:
     ancho = alto = 600
     escala = 6.15
     mjd_a = campo["mjd_a"]
     mjd_b = round(mjd_a + campo["horas"] / 24.0, 5)
+    wcs = wcs_de(campo, ancho, alto, escala)
 
     meta = {
         "_comentario": "Datos de demostración generados por m9_sitio/ejemplos/generar_datos.py.",
         "version_contrato": VERSION_CONTRATO,
         "origen": "sintetico",
+        "wcs": wcs,
         "campo": campo["campo"],
         "nombre": campo["nombre"],
         "centro": campo["centro"],
@@ -269,15 +291,15 @@ def construir(campo: dict) -> tuple[dict, dict, dict]:
             "distancia_catalogo_segarc": cand["distancia_catalogo"],
             "clase_movimiento": cand["clase"],
             "posicion_a": {
-                "ra_grados": round(campo["centro"]["ra_grados"] + cand["xa"] * escala / 3600.0, 5),
-                "dec_grados": round(campo["centro"]["dec_grados"] - cand["ya"] * escala / 3600.0, 5),
+                "ra_grados": cielo(wcs, cand["xa"], cand["ya"])[0],
+                "dec_grados": cielo(wcs, cand["xa"], cand["ya"])[1],
                 "x": cand["xa"],
                 "y": cand["ya"],
                 "mjd": mjd_a,
             },
             "posicion_b": {
-                "ra_grados": round(campo["centro"]["ra_grados"] + cand["xb"] * escala / 3600.0, 5),
-                "dec_grados": round(campo["centro"]["dec_grados"] - cand["yb"] * escala / 3600.0, 5),
+                "ra_grados": cielo(wcs, cand["xb"], cand["yb"])[0],
+                "dec_grados": cielo(wcs, cand["xb"], cand["yb"])[1],
                 "x": cand["xb"],
                 "y": cand["yb"],
                 "mjd": mjd_b,

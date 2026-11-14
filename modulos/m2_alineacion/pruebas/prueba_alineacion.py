@@ -273,3 +273,29 @@ def prueba_diferencia_pinta_verde_lo_que_aparece_y_coral_lo_que_desaparece(aline
     assert aparece[1] > aparece[0] + 40          # verde domina donde el objeto está en B
     assert desaparece[0] > desaparece[1] + 40    # coral domina donde estaba en A
     assert np.allclose(fondo, exportacion_png.FONDO, atol=12)  # donde nada cambia, el fondo de la guía visual
+
+
+def prueba_el_wcs_publicado_reproduce_el_de_astropy(alineado):
+    """El WCS de meta.json (base 0) debe dar las mismas RA/DEC que astropy sobre el FITS alineado."""
+    metadatos_campo.escribir_meta("campo_prueba", raiz_datos=alineado.parents[1])
+    meta = json.loads((alineado / "meta.json").read_text(encoding="utf-8"))
+    w = meta["wcs"]
+    assert w["proyeccion"] == "TAN"
+    with fits.open(alineado / "epoca_a.fits") as h:
+        referencia = WCS(h["IMAGE"].header).celestial
+    for x, y in ((0.0, 0.0), (10.5, 90.25), (LADO - 1.0, LADO - 1.0)):
+        ra, dec = referencia.pixel_to_world_values(x, y)
+        xi = w["cd"][0][0] * (x - w["crpix_x"]) + w["cd"][0][1] * (y - w["crpix_y"])
+        eta = w["cd"][1][0] * (x - w["crpix_x"]) + w["cd"][1][1] * (y - w["crpix_y"])
+        a0, d0, xi, eta = np.radians([w["crval_ra_grados"], w["crval_dec_grados"], xi, eta])
+        ra_c = np.degrees(a0 + np.arctan2(xi, np.cos(d0) - eta * np.sin(d0))) % 360
+        dec_c = np.degrees(np.arctan((np.sin(d0) + eta * np.cos(d0)) * np.cos(np.radians(ra_c) - a0) / (np.cos(d0) - eta * np.sin(d0))))
+        assert abs((ra_c - float(ra) + 180) % 360 - 180) * 3600 < 0.01 and abs(dec_c - float(dec)) * 3600 < 0.01
+
+
+def prueba_origen_real_solo_si_todo_viene_de_irsa():
+    irsa = {"exposiciones": [{"url_acceso": "https://irsa.ipac.caltech.edu/ibe/data/a.fits"}]}
+    mezcla = {"exposiciones": [{"url_acceso": "https://irsa.ipac.caltech.edu/a.fits"}, {"url_acceso": "https://ejemplo.invalid/b.fits"}]}
+    assert metadatos_campo.origen_de(irsa) == "real"
+    assert metadatos_campo.origen_de(mezcla) is None
+    assert metadatos_campo.origen_de({"exposiciones": []}) is None
