@@ -1,0 +1,208 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contratos/candidatos.schema.json",
+  "title": "candidatos.json: lo que la web muestra de cada pareja",
+  "$comment": "ARCHIVO: contratos/candidatos.schema.json. ROL: fija la forma de candidatos.json: lo que la web muestra de cada pareja. PRODUCTOR: m7_publicacion/union_candidatos.py. CONSUMIDORES: m9_sitio. RUTA REAL: datos/m7_publicacion/<campo>/candidatos.json. VERIFICACION: check-jsonschema --schemafile contratos/candidatos.schema.json <archivo>. No contiene lógica: solo describe datos.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version_contrato",
+    "campo",
+    "candidatos"
+  ],
+  "properties": {
+    "_comentario": {
+      "type": "string",
+      "description": "Comentario libre para humanos. Ningún consumidor lo lee."
+    },
+    "version_contrato": {
+      "const": "1",
+      "description": "Versión del contrato. Cambia solo en un PR propio avisado a los cuatro lotes."
+    },
+    "campo": {
+      "type": "string",
+      "description": "Identificador del campo: minúsculas, cifras, guion bajo.",
+      "pattern": "^[a-z0-9_]+$"
+    },
+    "candidatos": {
+      "type": "array",
+      "description": "Una entrada por cada pareja no estacionaria.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id_candidato",
+          "estado",
+          "nombre_objeto",
+          "distancia_catalogo_segarc",
+          "clase_movimiento",
+          "posicion_a",
+          "posicion_b",
+          "separacion_segarc",
+          "velocidad_segarc_por_hora",
+          "incertidumbre_velocidad",
+          "significancia",
+          "tiene_espectro",
+          "tipo",
+          "temperatura_k"
+        ],
+        "properties": {
+          "id_candidato": {
+            "type": "string",
+            "description": "Identificador de la pareja A-B dentro del campo.",
+            "pattern": "^p[0-9]{3}$"
+          },
+          "estado": {
+            "description": "Copiado de identificacion.json.",
+            "enum": [
+              "conocido",
+              "sin_identificar",
+              "artefacto_descartado"
+            ]
+          },
+          "nombre_objeto": {
+            "description": "Copiado de identificacion.json.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "distancia_catalogo_segarc": {
+            "description": "Copiado de identificacion.json.",
+            "minimum": 0,
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "clase_movimiento": {
+            "description": "Copiado de movimiento.json. Nunca estacionaria.",
+            "enum": [
+              "candidata",
+              "no_concluyente"
+            ]
+          },
+          "posicion_a": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "ra_grados",
+              "dec_grados",
+              "x",
+              "y",
+              "mjd"
+            ],
+            "properties": {
+              "ra_grados": {
+                "type": "number",
+                "description": "Ascensión recta ICRS en grados.",
+                "minimum": 0,
+                "maximum": 360
+              },
+              "dec_grados": {
+                "type": "number",
+                "description": "Declinación ICRS en grados.",
+                "minimum": -90,
+                "maximum": 90
+              },
+              "x": {
+                "type": "number",
+                "description": "Columna en la rejilla alineada, base 0, origen en la esquina inferior izquierda."
+              },
+              "y": {
+                "type": "number",
+                "description": "Fila en la rejilla alineada, base 0, origen en la esquina inferior izquierda."
+              },
+              "mjd": {
+                "type": "number",
+                "description": "Fecha de la exposición en días julianos modificados (MJD)."
+              }
+            },
+            "description": "Posición observada en una época."
+          },
+          "posicion_b": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "ra_grados",
+              "dec_grados",
+              "x",
+              "y",
+              "mjd"
+            ],
+            "properties": {
+              "ra_grados": {
+                "type": "number",
+                "description": "Ascensión recta ICRS en grados.",
+                "minimum": 0,
+                "maximum": 360
+              },
+              "dec_grados": {
+                "type": "number",
+                "description": "Declinación ICRS en grados.",
+                "minimum": -90,
+                "maximum": 90
+              },
+              "x": {
+                "type": "number",
+                "description": "Columna en la rejilla alineada, base 0, origen en la esquina inferior izquierda."
+              },
+              "y": {
+                "type": "number",
+                "description": "Fila en la rejilla alineada, base 0, origen en la esquina inferior izquierda."
+              },
+              "mjd": {
+                "type": "number",
+                "description": "Fecha de la exposición en días julianos modificados (MJD)."
+              }
+            },
+            "description": "Posición observada en una época."
+          },
+          "separacion_segarc": {
+            "type": "number",
+            "description": "Copiado de movimiento.json.",
+            "minimum": 0
+          },
+          "velocidad_segarc_por_hora": {
+            "type": "number",
+            "description": "Copiado de movimiento.json.",
+            "minimum": 0
+          },
+          "incertidumbre_velocidad": {
+            "type": "number",
+            "description": "Copiado de movimiento.json.",
+            "minimum": 0
+          },
+          "significancia": {
+            "type": "number",
+            "description": "Copiado de movimiento.json.",
+            "minimum": 0
+          },
+          "tiene_espectro": {
+            "type": "boolean",
+            "description": "Verdadero si espectros.json contiene esta pareja."
+          },
+          "tipo": {
+            "description": "Copiado de espectros.json. Nulo si no tiene espectro.",
+            "enum": [
+              "asteroide_rocoso",
+              "asteroide_oscuro",
+              "cometa",
+              "enana_marron",
+              "indeterminado",
+              null
+            ]
+          },
+          "temperatura_k": {
+            "description": "Copiado de espectros.json.",
+            "exclusiveMinimum": 0,
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

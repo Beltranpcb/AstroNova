@@ -40,14 +40,17 @@ Dejar en un único directorio los datos que la web lee.
 | `indice_campos.py` | Escribe campos.json con la lista de campos publicados. |
 | `control_publicacion.py` | Rechaza la publicación cuando un archivo incumple su contrato. |
 | `pruebas/prueba_publicacion.py` | Comprueba la unión sobre los ejemplos de los contratos. |
+| `pytest.ini` | Recoge las pruebas `prueba_*.py` sin depender de la raíz. |
+| `esquemas/` | Copia de los cuatro contratos que valida el control. |
+| `ejemplos/` | `campo_ejemplo`: los siete JSON de referencia. |
 
 ## Orden de ejecución
 
 ```bash
 python -m modulos.m7_publicacion.union_candidatos <campo>
 python -m modulos.m7_publicacion.copia_publicable <campo>
-python -m modulos.m7_publicacion.indice_campos <campo>
-python -m modulos.m7_publicacion.control_publicacion <campo>
+python -m modulos.m7_publicacion.indice_campos
+python -m modulos.m7_publicacion.control_publicacion
 ```
 
 ## Verificación en aislamiento
@@ -58,12 +61,12 @@ python -m pytest modulos/m7_publicacion/pruebas -q
 
 Criterio de aceptación: el comando termina con código 0 solo si se cumple todo lo siguiente.
 
-1. El candidatos.json generado desde los ejemplos coincide valor a valor con contratos/ejemplos/campo_ejemplo/candidatos.json.
-2. El campos.json generado desde los ejemplos coincide con contratos/ejemplos/campos.json.
+1. El candidatos.json generado desde los ejemplos coincide valor a valor con modulos/m7_publicacion/ejemplos/campo_ejemplo/candidatos.json.
+2. El campos.json generado desde los ejemplos coincide con modulos/m7_publicacion/ejemplos/campos.json.
 3. Un JSON de entrada que incumple su esquema hace que control_publicacion termine con código distinto de cero.
 4. Un archivo de 2 MB en el directorio publicado hace que control_publicacion termine con código distinto de cero.
 
-La verificación no ejecuta ningún otro módulo: usa datos sintéticos o los ejemplos de `contratos/ejemplos/`.
+La verificación no ejecuta ningún otro módulo: usa datos sintéticos o los ejemplos de `modulos/m7_publicacion/ejemplos/`.
 
 ## Nota
 
@@ -71,4 +74,8 @@ La verificación no ejecuta ningún otro módulo: usa datos sintéticos o los ej
 
 ## Estado
 
-Esqueleto sin código: el comando de verificación falla hasta que el lote implemente el módulo.
+Implementado. Los cuatro comandos de arriba se ejecutan en ese orden y la
+verificación pasa: 13 pruebas en verde con `python -m pytest
+modulos/m7_publicacion/pruebas -q`. La unión solo necesita la biblioteca
+estándar; `control_publicacion.py` usa `jsonschema` para leer los esquemas de
+`esquemas/` (o `contratos/` si el árbol completo está presente).
