@@ -70,6 +70,24 @@ Ejemplo que sirve de prueba de aceptación: un planeta de 25 000 km con albedo 0
 
 **Regla de lenguaje.** La web dice siempre «candidato», nunca «descubrimiento». Dos detecciones no demuestran un objeto nuevo.
 
+### Análisis de objetos
+
+La web tiene una segunda sección, **Análisis de objetos**, con tres pestañas que separan detección,
+identificación y clasificación física:
+
+| Pestaña | Qué hace | De dónde salen los datos |
+|---|---|---|
+| **Catálogo** | Lista los objetos detectados en los campos publicados, con búsqueda y filtros. La ficha muestra la clase catalogada con su fuente, el espectro, la composición y dos listas distintas: misma clasificación y espectros más similares. | `catalogo.json` (m7, `indice_catalogo.py`) |
+| **Identificar** | Un clic en la imagen se convierte en RA/DEC con el WCS del campo; junto a una detección muestra su identificación de m5; «Consultar efemérides» pregunta en vivo a SkyBoT (IMCCE) qué cuerpos menores estaban allí en la fecha de la época A. | `meta.json` (`wcs`), `candidatos.json`, SkyBoT |
+| **Comparar espectros** | Dos espectros observados con sus incertidumbres, en flujo medido o normalizados; en modo «Plantillas», un objeto frente a las curvas de referencia con χ² reducido y grados de libertad. | `espectros.json`, `plantillas.json` (m6) |
+
+Las fichas incluyen **Composición espectral** (m6, `identificacion_molecular.py`): cada molécula lleva un
+estado (sin rasgo, compatible, candidata, detectada o datos insuficientes) con su significancia en sigmas,
+el criterio, las explicaciones alternativas y la referencia de la banda. Nada se declara detectado por una
+coincidencia aproximada de longitud de onda, y un objeto sin coincidencia no se etiqueta como Planeta X.
+
+El estado de cada pieza (real, demostración, pendiente) está en [docs/analisis_de_objetos.md](docs/analisis_de_objetos.md).
+
 ## 3. Datos utilizados
 
 **Imágenes de SPHEREx.** Publicaciones DR1 con QR3 del archivo IRSA (Caltech/IPAC). Cada imagen espectral de nivel 2 es un FITS con las extensiones de brillo (`IMAGE`, en MJy/sr), máscara (`FLAGS`), varianza (`VARIANCE`), luz zodiacal (`ZODI`), PSF (`EPSF` en el archivo real) y longitud de onda (`WCS-WAVE`, una tabla `WAVE-TAB` con rejilla de nodos, no una imagen). Escala: 6,15 segundos de arco por píxel.
@@ -211,6 +229,8 @@ Toda flecha entre dos módulos está respaldada por un contrato del directorio [
 | `contratos/espectros.schema.json` | espectros.json | m6 | m7, m9 |
 | `contratos/candidatos.schema.json` | candidatos.json | m7 | m9 |
 | `contratos/campos.schema.json` | campos.json | m7 | m9 |
+| `contratos/plantillas.schema.json` | plantillas.json | m6 | m7, m9 |
+| `contratos/catalogo.schema.json` | catalogo.json | m7 | m9 |
 | `contratos/guia_visual.md` | variables de estilo | equipo | m9 |
 
 Cada contrato JSON tiene un ejemplo escrito a mano en `contratos/ejemplos/`. Los ocho ejemplos describen el mismo campo ficticio, coherentes entre sí. Sus valores son inventados.
@@ -1077,6 +1097,8 @@ AstroNova/
 │   ├── LEEME.md                            Describe la capa de contratos con sus reglas de cambio.
 │   ├── alineados_fits.md                   Fija la rejilla común de las tres imágenes alineadas.
 │   ├── campos.schema.json                  Fija la forma del índice de campos publicados.
+│   ├── catalogo.schema.json                Fija la forma del catálogo navegable de objetos.
+│   ├── plantillas.schema.json              Fija la forma de las curvas de referencia publicadas.
 │   ├── candidatos.schema.json              Fija la forma de lo que la web muestra de cada pareja.
 │   ├── espectros.schema.json               Fija la forma de la huella espectral de cada pareja candidata.
 │   ├── fuentes.schema.json                 Fija la forma de las fuentes detectadas con sus parejas propuestas.
@@ -1090,7 +1112,8 @@ AstroNova/
 ├── datos/                                  Salidas del pipeline. NO se versiona (salvo el LEEME).
 │   └── LEEME.md                            Describe los datos generados y cómo regenerarlos.
 ├── herramientas/
-│   └── actualizar_publicacion.py           Refresca lo caducado y conserva lo anterior si falla.
+│   ├── actualizar_publicacion.py           Refresca lo caducado y conserva lo anterior si falla.
+│   └── pruebas/prueba_extremo_a_extremo.py  De m6 a lo publicado, por contratos.
 ├── modulos/
 │   ├── m1_adquisicion/
 │   │   ├── pruebas/
@@ -1133,6 +1156,7 @@ AstroNova/
 │   │   │   └── prueba_huella_espectral.py  Comprueba el ajuste espectral sobre espectros sintéticos.
 │   │   ├── LEEME.md                        Describe el módulo junto a su comando de verificación.
 │   │   ├── ajuste_planck.py                Estima la temperatura del objeto ajustando la ley de Planck.
+│   │   ├── identificacion_molecular.py     Evalúa bandas de H2O, CH4, CO2, CO, NH3 sin forzar detecciones.
 │   │   ├── comparacion_plantillas.py       Asigna al espectro medido el tipo de la plantilla más parecida.
 │   │   ├── escritura_espectros.py          Reúne medida, tipo, temperatura en el archivo del contrato.
 │   │   ├── fotometria.py                   Mide el flujo del objeto en cada exposición de la serie espectral.
@@ -1145,19 +1169,34 @@ AstroNova/
 │   │   ├── control_publicacion.py          Rechaza la publicación cuando un archivo incumple su contrato.
 │   │   ├── copia_publicable.py             Copia al directorio publicado los archivos que la web lee sin cambios.
 │   │   ├── indice_campos.py                Escribe campos.json con la lista de campos publicados.
+│   │   ├── indice_catalogo.py              Escribe catalogo.json: objetos, datos y relacionados.
 │   │   └── union_candidatos.py             Une los resultados de cada pareja en candidatos.json.
 │   └── m9_sitio/
 │       ├── pruebas/
 │       │   ├── lista_visual.md             Enumera las comprobaciones manuales de la web en navegador.
-│       │   └── prueba_sitio.js             Comprueba la lectura de datos sobre los ejemplos de los contratos.
+│       │   ├── prueba_catalogo.js          Comprueba la búsqueda y los textos del catálogo.
+│       │   ├── prueba_comparador.js        Comprueba normalización, compatibilidad y plantillas.
+│       │   ├── prueba_composicion.js       Comprueba cuándo y cómo se muestra la composición.
+│       │   ├── prueba_identificar.js       Comprueba la proyección TAN contra astropy y SkyBoT.
+│       │   ├── prueba_sitio.js             Comprueba la lectura de datos sobre los ejemplos de los contratos.
+│       │   └── wcs_referencia.json         Valores de astropy para la prueba del WCS.
 │       ├── LEEME.md                        Describe el módulo junto a su comando de verificación.
+│       ├── analisis.js                     Alterna explorador y análisis; pestañas.
 │       ├── carga_datos.js                  Lee los archivos publicados de un campo.
+│       ├── catalogo.js                     Catálogo navegable con ficha y relacionados.
+│       ├── catalogo_logica.js              Búsqueda, filtros y textos del catálogo.
+│       ├── comparador.js                   Comparador de dos espectros y modo plantillas.
+│       ├── comparador_logica.js            Objetos válidos, normalización, compatibilidad.
+│       ├── composicion.js                  Sección «Composición espectral» de las fichas.
+│       ├── composicion_logica.js           Orden y textos de la composición.
 │       ├── espectro.js                     Dibuja la huella espectral del candidato seleccionado.
 │       ├── espectro3d.html                 Página aparte con las huellas espectrales del campo en 3D.
 │       ├── espectro3d.js                   Escena WebGL con un listón por candidata.
 │       ├── estado_seleccion.js             Mantiene la selección actual de campo con su candidato.
 │       ├── estilo.css                      Aplica la guía visual con diseño adaptable a móvil.
 │       ├── ficha.js                        Muestra la ficha del candidato seleccionado.
+│       ├── identificar.js                  Clic -> RA/DEC, detección marcada y SkyBoT.
+│       ├── identificar_logica.js           Proyección TAN, lienzo <-> píxel, SkyBoT.
 │       ├── index.html                      Define la portada con los contenedores de cada vista.
 │       ├── selector_campo.js               Dibuja la lista de campos disponibles.
 │       ├── superposicion.js                Dibuja sobre el visor la trayectoria de cada candidato.
@@ -1199,13 +1238,13 @@ Los ocho comandos, uno por contrato, están en [contratos/LEEME.md](contratos/LE
 | `m5_identificacion` | `python -m pytest modulos/m5_identificacion/pruebas -q` | 1. Con una caché sintética, un objeto predicho a 5 segundos de arco da estado conocido.<br>2. Un objeto predicho a 30 segundos de arco da estado sin_identificar.<br>3. Una pareja no_concluyente sin coincidencia da estado artefacto_descartado.<br>4. La prueba termina sin abrir ninguna conexión de red.<br>5. El identificacion.json generado valida contra contratos/identificacion.schema.json. |
 | `m6_huella_espectral` | `python -m pytest modulos/m6_huella_espectral/pruebas -q` | 1. Un cuerpo negro sintético de 300 K se recupera con una temperatura entre 270 y 330 K.<br>2. Un espectro sintético con un pico de emisión en 4,26 micras recibe el tipo cometa.<br>3. Un espectro de ruido puro recibe el tipo indeterminado.<br>4. El espectros.json generado valida contra contratos/espectros.schema.json. |
 | `m7_publicacion` | `python -m pytest modulos/m7_publicacion/pruebas -q` | 1. El candidatos.json generado desde los ejemplos coincide valor a valor con contratos/ejemplos/campo_ejemplo/candidatos.json.<br>2. El campos.json generado desde los ejemplos coincide con contratos/ejemplos/campos.json.<br>3. Un JSON de entrada que incumple su esquema hace que control_publicacion termine con código distinto de cero.<br>4. Un archivo de 2 MB en el directorio publicado hace que control_publicacion termine con código distinto de cero. |
-| `m9_sitio` | `node --test modulos/m9_sitio/pruebas/prueba_sitio.js` | 1. La lectura de contratos/ejemplos devuelve un campo con dos candidatos.<br>2. Un archivo con version_contrato distinta de 1 produce un error con el nombre del archivo.<br>3. Seleccionar un candidato avisa a todas las vistas suscritas una sola vez.<br>4. Las comprobaciones de pruebas/lista_visual.md quedan marcadas tras revisarlas en navegador. |
+| `m9_sitio` | `node --test modulos/m9_sitio/pruebas/prueba_sitio.js modulos/m9_sitio/pruebas/prueba_comparador.js modulos/m9_sitio/pruebas/prueba_catalogo.js modulos/m9_sitio/pruebas/prueba_composicion.js modulos/m9_sitio/pruebas/prueba_identificar.js` | 1. La lectura de contratos/ejemplos devuelve un campo con dos candidatos.<br>2. Un archivo con version_contrato distinta de 1 produce un error con el nombre del archivo.<br>3. Seleccionar un candidato avisa a todas las vistas suscritas una sola vez.<br>4. Las comprobaciones de pruebas/lista_visual.md quedan marcadas tras revisarlas en navegador. |
 
 **Todo junto:**
 
 ```bash
-python -m pytest -q                                   # 128 pruebas de m1 a m7
-node --test modulos/m9_sitio/pruebas/prueba_sitio.js               # 9 pruebas
+python -m pytest -q                                   # 162 pruebas: m1 a m7 y la de extremo a extremo
+node --test modulos/m9_sitio/pruebas/prueba_*.js      # 55 pruebas de la web (ejecutar desde bash)
 ```
 
 **Estado de la publicación** (cuando haya datos generados):

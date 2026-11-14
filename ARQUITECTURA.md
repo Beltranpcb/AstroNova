@@ -154,6 +154,8 @@ Toda flecha entre dos módulos del nivel 1 está respaldada por un contrato de `
 | `contratos/espectros.schema.json` | espectros.json | m6 | m7, m9 |
 | `contratos/candidatos.schema.json` | candidatos.json | m7 | m9 |
 | `contratos/campos.schema.json` | campos.json | m7 | m9 |
+| `contratos/plantillas.schema.json` | plantillas.json | m6 | m7, m9 |
+| `contratos/catalogo.schema.json` | catalogo.json | m7 | m9 |
 | `contratos/guia_visual.md` | variables de estilo | equipo | m9 |
 
 Los contratos JSON son esquemas (JSON Schema 2020-12) que una herramienta estándar comprueba. Los contratos de FITS, de PNG, de estilo son documentos Markdown con su propia regla de verificación. Las convenciones comunes (unidades, identificadores, origen de píxeles) están en `contratos/LEEME.md`.
@@ -379,6 +381,7 @@ flowchart LR
 | `plantillas.json` | Contiene los espectros de referencia de los cuatro tipos de objeto. |
 | `comparacion_plantillas.py` | Asigna al espectro medido el tipo de la plantilla más parecida. |
 | `ajuste_planck.py` | Estima la temperatura del objeto ajustando la ley de Planck. |
+| `identificacion_molecular.py` | Evalúa bandas de H2O, CH4, CO2, CO y NH3 con estados que no fuerzan detecciones. |
 | `escritura_espectros.py` | Reúne medida, tipo, temperatura en el archivo del contrato. |
 | `pruebas/prueba_huella_espectral.py` | Comprueba el ajuste espectral sobre espectros sintéticos. |
 
@@ -419,6 +422,7 @@ flowchart LR
 | `union_candidatos.py` | Une los resultados de cada pareja en candidatos.json. |
 | `copia_publicable.py` | Copia al directorio publicado los archivos que la web lee sin cambios. |
 | `indice_campos.py` | Escribe campos.json con la lista de campos publicados. |
+| `indice_catalogo.py` | Escribe catalogo.json con objetos, datos disponibles y relacionados. |
 | `control_publicacion.py` | Rechaza la publicación cuando un archivo incumple su contrato. |
 | `pruebas/prueba_publicacion.py` | Comprueba la unión sobre los ejemplos de los contratos. |
 
@@ -495,6 +499,11 @@ En este módulo las flechas indican quién necesita a quién para funcionar. Los
 | `tabla.js` | Muestra la tabla ordenable de candidatos. |
 | `ficha.js` | Muestra la ficha del candidato seleccionado. |
 | `espectro.js` | Dibuja la huella espectral del candidato seleccionado. |
+| `analisis.js` | Alterna explorador y «Análisis de objetos» y gestiona sus pestañas. |
+| `catalogo.js`, `catalogo_logica.js` | Catálogo navegable: búsqueda, ficha, misma clasificación y espectros similares. |
+| `comparador.js`, `comparador_logica.js` | Comparador de dos espectros observados y modo objeto frente a plantillas. |
+| `composicion.js`, `composicion_logica.js` | Sección «Composición espectral» de las fichas. |
+| `identificar.js`, `identificar_logica.js` | Clic en la imagen -> RA/DEC con el WCS, detección marcada y efemérides de SkyBoT. |
 | `pruebas/prueba_sitio.js` | Comprueba la lectura de datos sobre los ejemplos de los contratos. |
 | `pruebas/lista_visual.md` | Enumera las comprobaciones manuales de la web en navegador. |
 
@@ -941,6 +950,7 @@ flowchart TB
 | `plantillas.json` | Contiene los espectros de referencia de los cuatro tipos de objeto. | Nada: se rellena a mano desde bibliografía. | Las cuatro curvas (asteroide_rocoso, asteroide_oscuro, cometa, enana_marron) que lee comparacion_plantillas.py. | Hay cuatro plantillas; cada una cubre de 0,75 a 5,0 micras con flujo normalizado. |
 | `comparacion_plantillas.py` | Asigna al espectro medido el tipo de la plantilla más parecida. | espectro_medido.json; plantillas.json. | datos/m6_huella_espectral/&lt;campo&gt;/tipo_espectral.json (intermedio interno). | Cada objeto recibe un chi cuadrado reducido por plantilla; el tipo es el del menor, o indeterminado si ninguno baja del umbral. |
 | `ajuste_planck.py` | Estima la temperatura del objeto ajustando la ley de Planck. | espectro_medido.json. | datos/m6_huella_espectral/&lt;campo&gt;/temperatura.json (intermedio interno). | El producto del pico de Wien por la temperatura vale 2898 micras kelvin con un error menor que 1. |
+| `identificacion_molecular.py` | Evalúa, banda por banda, rasgos de H2O, CH4, CO2, CO y NH3. | espectro_medido.json; tipo_espectral.json. | datos/m6_huella_espectral/&lt;campo&gt;/composicion.json (intermedio interno). | Una banda de CO2 sintética de 8 sigmas sale detectada; el ruido puro y los continuos curvos no dan detecciones; un espectro por detector sale datos_insuficientes. |
 | `escritura_espectros.py` | Reúne medida, tipo, temperatura en el archivo del contrato. | espectro_medido.json; tipo_espectral.json; temperatura.json. | datos/m6_huella_espectral/&lt;campo&gt;/espectros.json. | El archivo valida contra contratos/espectros.schema.json; hay un espectro por pareja candidata medida. |
 | `pruebas/prueba_huella_espectral.py` | Comprueba el ajuste espectral sobre espectros sintéticos. | Espectros sintéticos creados en memoria; contratos/espectros.schema.json. | El veredicto de pytest. | Es el propio verificador: pasa cuando se cumplen los criterios de aceptación del módulo. |
 
@@ -1014,6 +1024,7 @@ flowchart TB
 | `union_candidatos.py` | Une los resultados de cada pareja en candidatos.json. | fuentes.json; movimiento.json; identificacion.json; espectros.json. | datos/m7_publicacion/&lt;campo&gt;/candidatos.json. | El archivo valida contra contratos/candidatos.schema.json; no contiene ninguna pareja de clase estacionaria. |
 | `copia_publicable.py` | Copia al directorio publicado los archivos que la web lee sin cambios. | meta.json, epoca_a.png, epoca_b.png, diferencia.png de m2; espectros.json de m6. | Los mismos cinco archivos en datos/m7_publicacion/&lt;campo&gt;/. | Cada copia es idéntica byte a byte a su original. |
 | `indice_campos.py` | Escribe campos.json con la lista de campos publicados. | Los directorios de datos/m7_publicacion/ con su meta.json, su candidatos.json. | datos/m7_publicacion/campos.json. | El archivo valida contra contratos/campos.schema.json; numero_candidatos coincide con el recuento real. |
+| `indice_catalogo.py` | Escribe el catálogo navegable. | campos.json y, de cada campo, meta, candidatos y espectros publicados. | datos/m7_publicacion/catalogo.json. | Valida contra contratos/catalogo.schema.json; no lista artefactos ni anuncia espectros que no existen. |
 | `control_publicacion.py` | Rechaza la publicación cuando un archivo incumple su contrato. | Todo el contenido de datos/m7_publicacion/; los esquemas de contratos/. | Un informe por pantalla con código de salida 0 si todo cumple. | Con los ejemplos sale con código 0; con un JSON inválido o un archivo de más de 1 MB sale con código distinto de cero. |
 | `pruebas/prueba_publicacion.py` | Comprueba la unión sobre los ejemplos de los contratos. | Los siete JSON de contratos/ejemplos/campo_ejemplo/; contratos/ejemplos/campos.json. | El veredicto de pytest. | Es el propio verificador: pasa cuando se cumplen los criterios de aceptación del módulo. |
 
@@ -1150,6 +1161,10 @@ flowchart TB
 | `tabla.js` | Muestra la tabla ordenable de candidatos. | candidatos de carga_datos.js; la selección actual. | Las filas visibles; el id de la fila pulsada pasa a estado_seleccion.js. | Pulsar una cabecera reordena las filas; el filtro por clase oculta las demás. |
 | `ficha.js` | Muestra la ficha del candidato seleccionado. | candidatos de carga_datos.js; la selección actual; Aladin Lite v3. | El panel con datos, estado de catálogo, mapa del cielo centrado en el objeto. | La ficha siempre contiene la palabra candidato; un estado conocido muestra nombre con distancia al catálogo. |
 | `espectro.js` | Dibuja la huella espectral del candidato seleccionado. | espectros de carga_datos.js; la selección actual; Chart.js. | La gráfica de flujo frente a longitud de onda, rotulada con tipo, temperatura. | Los puntos aparecen en orden de fecha de observación; el eje horizontal va de 0,75 a 5,0 micras. |
+| `catalogo.js` | Dibuja el catálogo navegable y la ficha del objeto. | catalogo.json; espectros.json del campo. | Lista con búsqueda y filtros; ficha con dos listas de relacionados. | Buscar «slipher» deja una fila; «Comparar» abre el comparador con los dos objetos. |
+| `comparador.js` | Compara dos espectros observados o un objeto con las plantillas. | espectros.json de todos los campos; plantillas.json. | Gráfica con incertidumbres, modos flujo, normalizado y plantillas, avisos. | Solo lista objetos con espectro válido; el texto dice «más compatible entre las evaluadas». |
+| `composicion.js` | Muestra la composición molecular de m6. | composicion de espectros.json. | Sección «Composición espectral» con franjas teóricas y una tarjeta por molécula. | No aparece sin espectro utilizable; cada estado va escrito. |
+| `identificar.js` | Identifica una fuente elegida en la imagen. | meta.json con wcs; candidatos; SkyBoT (IMCCE). | Píxel, RA/DEC, época y coincidencias con su veredicto. | Sin wcs no hay coordenadas; la proyección coincide con astropy a menos de 1 mas. |
 | `pruebas/prueba_sitio.js` | Comprueba la lectura de datos sobre los ejemplos de los contratos. | contratos/ejemplos/campos.json; contratos/ejemplos/campo_ejemplo/meta.json, candidatos.json, espectros.json. | El veredicto de node --test. | Es el propio verificador: pasa cuando se cumplen los tres primeros criterios de aceptación del módulo. |
 | `pruebas/lista_visual.md` | Enumera las comprobaciones manuales de la web en navegador. | Nada: la rellena quien revisa la web. | Ocho casillas marcadas o sin marcar. | Las ocho casillas quedan marcadas en un ordenador, igual que en un móvil. |
 </details>
@@ -1204,6 +1219,8 @@ AstroNova/
 │   ├── LEEME.md                            Describe la capa de contratos con sus reglas de cambio.
 │   ├── alineados_fits.md                   Fija la rejilla común de las tres imágenes alineadas.
 │   ├── campos.schema.json                  Fija la forma del índice de campos publicados.
+│   ├── catalogo.schema.json                Fija la forma del catálogo navegable de objetos.
+│   ├── plantillas.schema.json              Fija la forma de las curvas de referencia publicadas.
 │   ├── candidatos.schema.json              Fija la forma de lo que la web muestra de cada pareja.
 │   ├── espectros.schema.json               Fija la forma de la huella espectral de cada pareja candidata.
 │   ├── fuentes.schema.json                 Fija la forma de las fuentes detectadas con sus parejas propuestas.
@@ -1258,6 +1275,7 @@ AstroNova/
 │   │   │   └── prueba_huella_espectral.py  Comprueba el ajuste espectral sobre espectros sintéticos.
 │   │   ├── LEEME.md                        Describe el módulo junto a su comando de verificación.
 │   │   ├── ajuste_planck.py                Estima la temperatura del objeto ajustando la ley de Planck.
+│   │   ├── identificacion_molecular.py     Evalúa bandas de H2O, CH4, CO2, CO, NH3 sin forzar detecciones.
 │   │   ├── comparacion_plantillas.py       Asigna al espectro medido el tipo de la plantilla más parecida.
 │   │   ├── escritura_espectros.py          Reúne medida, tipo, temperatura en el archivo del contrato.
 │   │   ├── fotometria.py                   Mide el flujo del objeto en cada exposición de la serie espectral.
@@ -1270,19 +1288,34 @@ AstroNova/
 │   │   ├── control_publicacion.py          Rechaza la publicación cuando un archivo incumple su contrato.
 │   │   ├── copia_publicable.py             Copia al directorio publicado los archivos que la web lee sin cambios.
 │   │   ├── indice_campos.py                Escribe campos.json con la lista de campos publicados.
+│   │   ├── indice_catalogo.py              Escribe catalogo.json: objetos, datos y relacionados.
 │   │   └── union_candidatos.py             Une los resultados de cada pareja en candidatos.json.
 │   └── m9_sitio/
 │       ├── pruebas/
 │       │   ├── lista_visual.md             Enumera las comprobaciones manuales de la web en navegador.
-│       │   └── prueba_sitio.js             Comprueba la lectura de datos sobre los ejemplos de los contratos.
+│       │   ├── prueba_catalogo.js          Comprueba la búsqueda y los textos del catálogo.
+│       │   ├── prueba_comparador.js        Comprueba normalización, compatibilidad y plantillas.
+│       │   ├── prueba_composicion.js       Comprueba cuándo y cómo se muestra la composición.
+│       │   ├── prueba_identificar.js       Comprueba la proyección TAN contra astropy y SkyBoT.
+│       │   ├── prueba_sitio.js             Comprueba la lectura de datos sobre los ejemplos de los contratos.
+│       │   └── wcs_referencia.json         Valores de astropy para la prueba del WCS.
 │       ├── LEEME.md                        Describe el módulo junto a su comando de verificación.
+│       ├── analisis.js                     Alterna explorador y análisis; pestañas.
 │       ├── carga_datos.js                  Lee los archivos publicados de un campo.
+│       ├── catalogo.js                     Catálogo navegable con ficha y relacionados.
+│       ├── catalogo_logica.js              Búsqueda, filtros y textos del catálogo.
+│       ├── comparador.js                   Comparador de dos espectros y modo plantillas.
+│       ├── comparador_logica.js            Objetos válidos, normalización, compatibilidad.
+│       ├── composicion.js                  Sección «Composición espectral» de las fichas.
+│       ├── composicion_logica.js           Orden y textos de la composición.
 │       ├── espectro.js                     Dibuja la huella espectral del candidato seleccionado.
 │       ├── espectro3d.html                 Página aparte con las huellas espectrales del campo en 3D.
 │       ├── espectro3d.js                   Escena WebGL con un listón por candidata.
 │       ├── estado_seleccion.js             Mantiene la selección actual de campo con su candidato.
 │       ├── estilo.css                      Aplica la guía visual con diseño adaptable a móvil.
 │       ├── ficha.js                        Muestra la ficha del candidato seleccionado.
+│       ├── identificar.js                  Clic -> RA/DEC, detección marcada y SkyBoT.
+│       ├── identificar_logica.js           Proyección TAN, lienzo <-> píxel, SkyBoT.
 │       ├── index.html                      Define la portada con los contenedores de cada vista.
 │       ├── selector_campo.js               Dibuja la lista de campos disponibles.
 │       ├── superposicion.js                Dibuja sobre el visor la trayectoria de cada candidato.

@@ -35,7 +35,7 @@
         } catch (error) {
           console.warn(error);
           $("cat-estado").textContent =
-            "catalogo.json no está publicado. Ejecuta: python -m modulos.m7_publicacion.indice_catalogo";
+            "catalogo.json no está publicado: falta ejecutar indice_catalogo.py de m7 (ver el LEEME de m9).";
         }
       })();
     }
