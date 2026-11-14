@@ -311,3 +311,26 @@ def prueba_sin_movimiento_publica_cero_candidatos(raiz_datos):
     assert indice["campos"][0]["numero_candidatos"] == 0
 
     assert validar(str(raiz_datos), str(CONTRATOS)) == []
+
+
+def prueba_indice_avisa_si_el_meta_esta_incompleto(publicado):
+    """Un meta.json a medio escribir debe nombrar el archivo, no dar KeyError."""
+    ruta = publicado / "m7_publicacion" / CAMPO / "meta.json"
+    meta = leer_json(ruta)
+    meta.pop("nombre")
+    escribir_json(ruta, meta)
+
+    with pytest.raises(ValueError) as error:
+        escribir_campos(str(publicado))
+    assert "meta.json" in str(error.value)
+    assert "nombre" in str(error.value)
+
+
+def prueba_indice_avisa_si_el_candidatos_esta_incompleto(publicado):
+    ruta = publicado / "m7_publicacion" / CAMPO / "candidatos.json"
+    escribir_json(ruta, {"version_contrato": "1", "campo": CAMPO})
+
+    with pytest.raises(ValueError) as error:
+        escribir_campos(str(publicado))
+    assert "candidatos.json" in str(error.value)
+    assert "candidatos" in str(error.value)
