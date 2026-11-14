@@ -73,7 +73,7 @@ Ejemplo que sirve de prueba de aceptación: un planeta de 25 000 km con albedo 0
 
 ## 3. Datos utilizados
 
-**Imágenes de SPHEREx.** Publicaciones DR1 con QR3 del archivo IRSA (Caltech/IPAC). Cada imagen espectral de nivel 2 es un FITS con las extensiones de brillo (`IMAGE`, en MJy/sr), máscara (`FLAGS`), varianza (`VARIANCE`), luz zodiacal (`ZODI`), PSF, longitud de onda de cada píxel (`WCS-WAVE`). Escala: 6,15 segundos de arco por píxel.
+**Imágenes de SPHEREx.** Publicaciones DR1 con QR3 del archivo IRSA (Caltech/IPAC). Cada imagen espectral de nivel 2 es un FITS con las extensiones de brillo (`IMAGE`, en MJy/sr), máscara (`FLAGS`), varianza (`VARIANCE`), luz zodiacal (`ZODI`), PSF (`EPSF` en el archivo real) y longitud de onda (`WCS-WAVE`, una tabla `WAVE-TAB` con rejilla de nodos, no una imagen). Escala: 6,15 segundos de arco por píxel.
 
 | Detector | Longitud de onda (µm) | Resolución R | Por qué importa |
 |---|---|---|---|
@@ -86,8 +86,11 @@ Ejemplo que sirve de prueba de aceptación: un planeta de 25 000 km con albedo 0
 
 **Cómo se accede.**
 
-- Servicio SIA2 de IRSA (`https://irsa.ipac.caltech.edu/SIA`), colecciones `spherex_qr3`, `spherex_dr1`, `spherex_dr1_deep`: lista las exposiciones que cubren un punto del cielo.
-- Servicio de recortes de IRSA (parámetros `center`, `size`): se descargan recortes de unos 0,2 grados, nunca la imagen entera de 70 MB.
+- **TAP de IRSA** (`https://irsa.ipac.caltech.edu/TAP/sync`), tabla `spherex.obscore`: lista las exposiciones de `spherex_qr3`, `spherex_dr1` y `spherex_dr1_deep` que cubren un punto del cielo. Cada fila trae un `access_url` que es un **DataLink**, no un FITS.
+- **DataLink** (`/datalink/links/spherex?ID=…`): de su respuesta se toma la ruta relativa del FITS científico.
+- **Servicio de recortes** (`ibe/cutout?path=…&center=…&size=…`): se descargan recortes de unos 0,2 grados, nunca la imagen entera de 70 MB.
+
+> El servicio SIA del IRSA (`/SIA`) **no sirve SPHEREx**: solo cubre `wise`, `twomass` y `ptf`. La vía que responde es TAP, como se comprobó el 2026-11-14.
 
 **Qué épocas se comparan.** Un asteroide del cinturón principal se mueve entre 30 y 75 segundos de arco por hora (media docena de píxeles en un par de horas; unos 75 ″/h corresponden a 0,5°/día). Con seis meses de separación ya no estaría en el campo. Por eso cada campo usa tres imágenes del mismo detector:
 
@@ -120,7 +123,7 @@ Nueve módulos. Cada flecha lleva el nombre del dato que circula.
 
 ```mermaid
 flowchart TD
-  IRSA(["IRSA: SIA2 con servicio de recortes"])
+  IRSA(["IRSA: TAP (spherex.obscore) y servicio de recortes"])
   JPL(["JPL sb_ident, con MPChecker de alternativa"])
   subgraph OFF["Pipeline offline en Python: se ejecuta antes de la demo"]
     m1_adquisicion["m1_adquisicion<br/>Lote A"]
@@ -136,7 +139,7 @@ flowchart TD
     m9_sitio["m9_sitio<br/>Lote D"]
   end
   VIS(["Visitante"])
-  IRSA -->|"tabla SIA2, recortes FITS"| m1_adquisicion
+  IRSA -->|"tabla TAP, recortes FITS"| m1_adquisicion
   m1_adquisicion -->|"seleccion.json, recortes FITS crudos"| m2_alineacion
   m1_adquisicion -->|"seleccion.json, recortes FITS crudos"| m6_huella_espectral
   m2_alineacion -->|"FITS alineados, meta.json"| m3_deteccion
@@ -233,7 +236,7 @@ flowchart LR
     f4["descarga_recortes.py"]
     f5["pruebas/prueba_adquisicion.py"]
   end
-  e0(["IRSA SIA2"])
+  e0(["IRSA TAP"])
   e1(["IRSA recortes"])
   e2(["m2_alineacion, m6_huella_espectral"])
   f1 -->|"centro, radio de cada campo"| f2
@@ -519,7 +522,7 @@ flowchart TB
   subgraph g1["consulta_sia.py"]
     direction LR
     g1o(["campos_objetivo.json"])
-    g1p1["Consultar SIA2 en las colecciones de SPHEREx"]
+    g1p1["Consultar TAP en las colecciones de SPHEREx"]
     g1o -->|"centro, radio del campo"| g1p1
     g1p2["Ordenar por t_min"]
     g1p1 -->|"tabla de exposiciones"| g1p2
@@ -1175,8 +1178,10 @@ AstroNova/
 │   ├── movimiento.schema.json              Fija la forma de la medida de movimiento de cada pareja.
 │   ├── recortes_fits.md                    Fija las extensiones que debe traer cada recorte crudo.
 │   └── seleccion.schema.json               Fija la forma de la lista de exposiciones elegidas para un campo.
-├── datos/
-│   └── LEEME.md                            Describe el directorio de datos generados con lo que entra en git.
+├── datos/                                  Salidas del pipeline. NO se versiona (salvo el LEEME).
+│   └── LEEME.md                            Describe los datos generados y cómo regenerarlos.
+├── herramientas/
+│   └── actualizar_publicacion.py           Refresca lo caducado y conserva lo anterior si falla.
 ├── modulos/
 │   ├── m1_adquisicion/
 │   │   ├── pruebas/
@@ -1282,7 +1287,7 @@ check-jsonschema --schemafile contratos/fuentes.schema.json contratos/ejemplos/c
 
 Los ocho comandos, uno por contrato, están en [contratos/LEEME.md](contratos/LEEME.md).
 
-**Cada módulo, en aislamiento** (falla hoy; pasa cuando el lote implementa el módulo):
+**Cada módulo, en aislamiento** (todos en verde el 2026-11-14):
 
 | Módulo | Comando de verificación | Criterio de aceptación |
 |---|---|---|
@@ -1295,6 +1300,22 @@ Los ocho comandos, uno por contrato, están en [contratos/LEEME.md](contratos/LE
 | `m7_publicacion` | `python -m pytest modulos/m7_publicacion/pruebas -q` | 1. El candidatos.json generado desde los ejemplos coincide valor a valor con contratos/ejemplos/campo_ejemplo/candidatos.json.<br>2. El campos.json generado desde los ejemplos coincide con contratos/ejemplos/campos.json.<br>3. Un JSON de entrada que incumple su esquema hace que control_publicacion termine con código distinto de cero.<br>4. Un archivo de 2 MB en el directorio publicado hace que control_publicacion termine con código distinto de cero. |
 | `m8_calculadora` | `node --test modulos/m8_calculadora/pruebas/prueba_calculadora.js` | 1. Con diámetro 25 000 km, albedo 0,4, distancia 500 UA, la magnitud aparente vale 21,6 con un margen de 0,1.<br>2. Con esos mismos datos la temperatura vale 12,4 K con un margen de 0,1 K.<br>3. Con esos mismos datos el máximo de emisión cae en 233 micras con un margen de 5 micras.<br>4. Con esos mismos datos el veredicto es no detectable. |
 | `m9_sitio` | `node --test modulos/m9_sitio/pruebas/prueba_sitio.js` | 1. La lectura de contratos/ejemplos devuelve un campo con dos candidatos.<br>2. Un archivo con version_contrato distinta de 1 produce un error con el nombre del archivo.<br>3. Seleccionar un candidato avisa a todas las vistas suscritas una sola vez.<br>4. Las ocho comprobaciones de pruebas/lista_visual.md quedan marcadas tras revisarlas en navegador. |
+
+**Todo junto:**
+
+```bash
+python -m pytest -q                                   # 128 pruebas de m1 a m7
+node --test modulos/m8_calculadora/pruebas/prueba_calculadora.js   # 7 pruebas
+node --test modulos/m9_sitio/pruebas/prueba_sitio.js               # 9 pruebas
+```
+
+**Estado de la publicación** (cuando haya datos generados):
+
+```bash
+python -m herramientas.actualizar_publicacion --estado
+```
+
+Muestra campo, candidatas publicadas, antigüedad, intentos fallidos y último error. Con `--forzar` refresca aunque esté fresco; sin argumentos, solo lo caducado.
 
 Mientras los archivos de prueba sean esqueletos, `pytest` termina con código 5 (ninguna prueba recogida) mientras que `node --test` no ejecuta ninguna prueba. Es el comportamiento esperado: un módulo no está hecho hasta que su comando termina con código 0 cumpliendo su criterio.
 
@@ -1330,7 +1351,7 @@ Cada lote programa contra los ejemplos de `contratos/ejemplos/`, que existen des
 
 | Horas | Lote A | Lote B | Lote C | Lote D | Punto de control |
 |---|---|---|---|---|---|
-| 0 – 1 | Rellenar `campos_objetivo.json`; comprobar cobertura con SIA2 | Revisar contratos `fuentes`, `identificacion` | Revisar contratos `movimiento`, `espectros` | Revisar contratos `candidatos`, `campos`, `guia_visual` | Contratos aceptados por los cuatro |
+| 0 – 1 | Rellenar `campos_objetivo.json`; comprobar cobertura con TAP | Revisar contratos `fuentes`, `identificacion` | Revisar contratos `movimiento`, `espectros` | Revisar contratos `candidatos`, `campos`, `guia_visual` | Contratos aceptados por los cuatro |
 | 1 – 4 | `m1`: consulta, selección, recortes | `m3`: detección sobre imágenes sintéticas | `m8`: calculadora completa | `m9`: carga de datos, visor con ejemplos | Recortes reales en disco |
 | 4 – 12 | `m2`: alineación, PNG, `meta.json` | `m3`: emparejamiento, parejas | `m4`: movimiento; `m6`: trayectoria, fotometría | `m9`: superposición, tabla, ficha | Primer asteroide real detectado |
 | 12 – 20 | `m7`: publicación del primer campo | `m5`: identificación con caché | `m6`: plantillas, Planck, 3I/ATLAS | `m9`: espectro; lectura de `datos/m7_publicacion/` | Un campo real de punta a punta |
@@ -1405,7 +1426,7 @@ Programarlo con cron o un temporizador del sistema:
 
 - **El campo 3 no encaja con el detector tal como está definido.** Una estrella de alto movimiento propio se mueve unos 10 segundos de arco *por año*. Entre dos épocas separadas horas no se desplaza; frente a la plantilla de seis meses se desplaza menos de un píxel. `m3_deteccion` la marcará como estacionaria. Además los catálogos de `m5_identificacion` solo contienen cuerpos menores, no estrellas. El equipo debe decidir en la hora 0: o se sustituye ese campo, o se muestra solo su espectro. Esta arquitectura no inventa un módulo para resolverlo.
 - **La cobertura de los tres campos en DR1 o QR3 no está comprobada.** Es la primera tarea del Lote A. Hay que tener un campo de reserva.
-- **Los nombres exactos de las extensiones FITS** (`PSF`, `WCS-WAVE`) se confirman con el primer recorte real. Si difieren se corrige `contratos/recortes_fits.md`.
+- **Las extensiones FITS ya están confirmadas** con recortes reales: la PSF se llama `EPSF` y `WCS-WAVE` es una tabla dispersa. Está documentado en `contratos/recortes_fits.md`.
 - **El espectro de un objeto móvil puede salir ruidoso.** En ese caso se publica promediado por detector (6 puntos en lugar de 102 bandas), dicho con transparencia.
 - **Las plantillas espectrales con la sensibilidad de SPHEREx están por rellenar** (`plantillas.json`, `sensibilidad_spherex.json`). Deben tomarse de bibliografía o de la documentación de IRSA, nunca inventarse.
 - **Los umbrales** (5 sigmas de detección, tolerancia de 15 segundos de arco, significancia de 2 a 5) son valores iniciales por calibrar con datos reales.

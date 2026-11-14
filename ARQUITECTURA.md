@@ -39,7 +39,7 @@ Nueve módulos. Cada flecha lleva el nombre del dato que circula.
 
 ```mermaid
 flowchart TD
-  IRSA(["IRSA: SIA2 con servicio de recortes"])
+  IRSA(["IRSA: TAP (spherex.obscore) y servicio de recortes"])
   JPL(["JPL sb_ident, con MPChecker de alternativa"])
   subgraph OFF["Pipeline offline en Python: se ejecuta antes de la demo"]
     m1_adquisicion["m1_adquisicion<br/>Lote A"]
@@ -55,7 +55,7 @@ flowchart TD
     m9_sitio["m9_sitio<br/>Lote D"]
   end
   VIS(["Visitante"])
-  IRSA -->|"tabla SIA2, recortes FITS"| m1_adquisicion
+  IRSA -->|"tabla TAP, recortes FITS"| m1_adquisicion
   m1_adquisicion -->|"seleccion.json, recortes FITS crudos"| m2_alineacion
   m1_adquisicion -->|"seleccion.json, recortes FITS crudos"| m6_huella_espectral
   m2_alineacion -->|"FITS alineados, meta.json"| m3_deteccion
@@ -179,7 +179,7 @@ flowchart LR
     f4["descarga_recortes.py"]
     f5["pruebas/prueba_adquisicion.py"]
   end
-  e0(["IRSA SIA2"])
+  e0(["IRSA TAP"])
   e1(["IRSA recortes"])
   e2(["m2_alineacion, m6_huella_espectral"])
   f1 -->|"centro, radio de cada campo"| f2
@@ -553,7 +553,7 @@ flowchart TB
   subgraph g1["consulta_sia.py"]
     direction LR
     g1o(["campos_objetivo.json"])
-    g1p1["Consultar SIA2 en las colecciones de SPHEREx"]
+    g1p1["Consultar TAP en las colecciones de SPHEREx"]
     g1o -->|"centro, radio del campo"| g1p1
     g1p2["Ordenar por t_min"]
     g1p1 -->|"tabla de exposiciones"| g1p2
@@ -606,7 +606,7 @@ flowchart TB
 |---|---|---|---|---|
 | `LEEME.md` | Describe el módulo junto a su comando de verificación. | Nada. | La ficha del módulo. | Cada archivo citado existe en el directorio. |
 | `campos_objetivo.json` | Declara los campos del cielo que el pipeline debe procesar. | Nada: se edita a mano en la hora 0. | La lista de campos (campo, nombre, ra_grados, dec_grados, radio_grados) que lee consulta_sia.py. | Cada entrada tiene los cinco datos; el identificador campo solo usa minúsculas, cifras, guion bajo. |
-| `consulta_sia.py` | Lista las exposiciones de SPHEREx que cubren un campo objetivo. | campos_objetivo.json; servicio SIA2 de IRSA. | datos/m1_adquisicion/&lt;campo&gt;/listado_exposiciones.json (intermedio interno). | El listado sale ordenado por t_min; cada fila tiene identificador, t_min, detector, access_url. |
+| `consulta_sia.py` | Lista las exposiciones de SPHEREx que cubren un campo objetivo. | campos_objetivo.json; servicio TAP de IRSA. | datos/m1_adquisicion/&lt;campo&gt;/listado_exposiciones.json (intermedio interno). | El listado sale ordenado por t_min; cada fila tiene identificador, t_min, detector, access_url. |
 | `seleccion_epocas.py` | Elige qué exposiciones cumplen cada papel del contrato de selección. | listado_exposiciones.json. | datos/m1_adquisicion/&lt;campo&gt;/seleccion.json. | El archivo valida contra contratos/seleccion.schema.json con un único epoca_a, un único epoca_b, una única plantilla. |
 | `descarga_recortes.py` | Descarga el recorte FITS de cada exposición seleccionada. | seleccion.json; servicio de recortes de IRSA. | datos/m1_adquisicion/&lt;campo&gt;/recortes/&lt;id_exposicion&gt;.fits. | Existe un FITS por exposición de seleccion.json; cada uno cumple contratos/recortes_fits.md. |
 | `pruebas/prueba_adquisicion.py` | Comprueba la selección de épocas sobre un listado sintético sin usar la red. | Un listado de exposiciones construido en memoria; contratos/seleccion.schema.json. | El veredicto de pytest. | Es el propio verificador: pasa cuando se cumplen los criterios de aceptación del módulo. |
@@ -1295,7 +1295,7 @@ flowchart TB
 | `contratos/movimiento.schema.json` | Fija la forma de la medida de movimiento de cada pareja. |
 | `contratos/recortes_fits.md` | Fija las extensiones que debe traer cada recorte crudo. |
 | `contratos/seleccion.schema.json` | Fija la forma de la lista de exposiciones elegidas para un campo. |
-| `datos/LEEME.md` | Describe el directorio de datos generados con lo que entra en git. |
+| `datos/LEEME.md` | Describe el directorio de datos generados. Nada de aquí entra en git. |
 | `pytest.ini` | Declara el nombrado en español de las pruebas para pytest. |
 | `requirements.txt` | Declara las dependencias de Python del pipeline. |
 
@@ -1328,7 +1328,7 @@ AstroNova/
 │   ├── recortes_fits.md                    Fija las extensiones que debe traer cada recorte crudo.
 │   └── seleccion.schema.json               Fija la forma de la lista de exposiciones elegidas para un campo.
 ├── datos/
-│   └── LEEME.md                            Describe el directorio de datos generados con lo que entra en git.
+│   └── LEEME.md                            Describe los datos generados. Nada de aquí entra en git.
 ├── modulos/
 │   ├── m1_adquisicion/
 │   │   ├── pruebas/
