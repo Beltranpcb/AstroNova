@@ -317,7 +317,26 @@ header.barra .vistas button { font-size: .82rem; padding: .3rem .7rem; }
 .cat-lista tbody tr:hover, .cat-lista tbody tr:focus-visible { background: var(--panel-alto); outline: none; }
 .cat-lista tbody tr.seleccionada { background: var(--acento-suave); }
 .cat-datos { width: 1%; }
-.cat-datos .insignia { display: block; width: max-content; margin: 0 0 .2rem; white-space: nowrap; }
+.cat-datos .composicion { margin-top: .9rem; border-top: 1px solid var(--borde-suave); padding-top: .6rem; }
+.composicion-titulo { margin: 0 0 .3rem; font-size: .8rem; text-transform: uppercase; letter-spacing: .1em; color: var(--texto_secundario); }
+.composicion-resumen { font-size: .84rem; margin: .3rem 0; }
+.composicion-grafico { height: 200px; position: relative; }
+.mol-lista { list-style: none; padding: 0; margin: .5rem 0; display: grid; gap: .5rem; }
+.mol { border: 1px solid var(--borde-suave); border-left: 4px solid var(--texto-apagado); border-radius: var(--radio-sm); padding: .45rem .6rem; font-size: .8rem; }
+.mol p { margin: .2rem 0; }
+.mol-cab { display: flex; flex-wrap: wrap; gap: .3rem .5rem; align-items: baseline; }
+.mol-estado { margin-left: auto; font-size: .72rem; padding: .05rem .5rem; border-radius: 999px; border: 1px solid var(--borde); }
+.mol-metrica { font-family: var(--mono); font-size: .76rem; }
+.mol-ref { font-size: .7rem; color: var(--texto-apagado); }
+.mol-detectada { border-left-color: var(--acierto); }
+.mol-detectada .mol-estado { border-color: var(--acierto); color: var(--acierto); }
+.mol-candidata { border-left-color: var(--acento); }
+.mol-candidata .mol-estado { border-color: var(--acento); color: var(--acento); }
+.mol-compatible { border-left-color: #7DD3FC; }
+.mol-compatible .mol-estado { border-color: #7DD3FC; color: #7DD3FC; }
+.mol-sin_rasgo .mol-estado, .mol-datos_insuficientes .mol-estado { color: var(--texto_secundario); }
+.mol-datos_insuficientes { border-left-style: dashed; }
+.insignia { display: block; width: max-content; margin: 0 0 .2rem; white-space: nowrap; }
 .cat-lista th, .cat-lista td { padding: .45rem .6rem; vertical-align: top; }
 .cat-ficha { background: var(--fondo-alt); border: 1px solid var(--borde-suave); border-radius: var(--radio-sm); padding: .8rem; }
 .cat-titulo { margin: 0 0 .4rem; font-size: 1.1rem; }
