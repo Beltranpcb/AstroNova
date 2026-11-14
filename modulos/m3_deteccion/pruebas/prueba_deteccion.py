@@ -266,10 +266,11 @@ def prueba_fuentes_estacionarias_o_descartadas_no_forman_parejas():
 
 
 def prueba_separacion_mayor_que_la_velocidad_maxima_no_forma_pareja():
+    tope = propuesta_parejas.separacion_maxima_pixeles(META)
     fuentes = [deteccion("a001", "epoca_a", 10.0, 10.0, situacion="huerfana"),
-               deteccion("b001", "epoca_b", 10.0 + 59.0, 10.0, situacion="huerfana")]
+               deteccion("b001", "epoca_b", 10.0 + tope + 1.0, 10.0, situacion="huerfana")]
     assert propuesta_parejas.proponer(fuentes, META) == []
-    fuentes[1]["x"] = 10.0 + 58.0
+    fuentes[1]["x"] = 10.0 + tope - 1.0
     assert len(propuesta_parejas.proponer(fuentes, META)) == 1
 
 

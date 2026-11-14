@@ -18,7 +18,16 @@ import math
 import sys
 from pathlib import Path
 
-VELOCIDAD_MAXIMA_SEGARC_POR_HORA = 60.0  # el doble de un asteroide típico del cinturón principal
+# Un asteroide del cinturón principal recorre unos 0,5°/día, es decir 75 ″/h.
+# El doble (150 ″/h) deja margen para objetos cercanos sin admitir cualquier cosa.
+VELOCIDAD_MAXIMA_SEGARC_POR_HORA = 150.0
+# Por debajo de esto el desplazamiento no se distingue del ruido de posición
+# (la incertidumbre típica es de 0,5 a 1 ″ y la pareja dura horas).
+VELOCIDAD_MINIMA_SEGARC_POR_HORA = 0.05
+# Dos fuentes débiles se emparejan por azar con demasiada facilidad.
+SENAL_RUIDO_MINIMO = 5.0
+# Las fuentes pegadas al borde del recorte son artefactos de la reproyección.
+MARGEN_BORDE_PIXELES = 5
 RAZON_MAXIMA_DE_BRILLO = 2.0  # el flujo de B entre el de A queda entre 1/2 y 2
 CAMPOS_DE_FUENTE = ("id_fuente", "epoca", "ra_grados", "dec_grados", "x", "y", "flujo_mjy", "senal_ruido",
                     "incertidumbre_posicion_segarc", "situacion")
@@ -27,6 +36,41 @@ CAMPOS_DE_FUENTE = ("id_fuente", "epoca", "ra_grados", "dec_grados", "x", "y", "
 def separacion_maxima_pixeles(meta):
     """Píxeles que un objeto puede recorrer entre A y B a la velocidad máxima admisible."""
     return VELOCIDAD_MAXIMA_SEGARC_POR_HORA * meta["horas_entre_a_b"] / meta["escala_segarc_por_pixel"]
+
+
+def separacion_minima_pixeles(meta):
+    """Píxeles por debajo de los cuales el movimiento no es distinguible del ruido."""
+    return VELOCIDAD_MINIMA_SEGARC_POR_HORA * meta["horas_entre_a_b"] / meta["escala_segarc_por_pixel"]
+
+
+def en_el_borde(fuente, meta):
+    """True si la fuente cae en el margen del recorte, donde la reproyección deja artefactos.
+
+    Si el meta no declara el tamaño (pruebas con metadatos mínimos), no hay borde
+    que comprobar y se acepta la fuente.
+    """
+    tamano = meta.get("tamano_pixeles")
+    if not tamano:
+        return False
+    ancho = tamano["ancho"]
+    alto = tamano["alto"]
+    return not (
+        MARGEN_BORDE_PIXELES <= fuente["x"] < ancho - MARGEN_BORDE_PIXELES
+        and MARGEN_BORDE_PIXELES <= fuente["y"] < alto - MARGEN_BORDE_PIXELES
+    )
+
+
+def pareja_plausible(a, b, distancia, minima, maxima, meta):
+    """Filtros de plausibilidad de una pareja, más allá de la separación."""
+    if not (minima <= distancia <= maxima):
+        return False
+    if not brillo_parecido(a, b):
+        return False
+    if min(a["senal_ruido"], b["senal_ruido"]) < SENAL_RUIDO_MINIMO:
+        return False
+    if en_el_borde(a, meta) or en_el_borde(b, meta):
+        return False
+    return True
 
 
 def brillo_parecido(fuente_a, fuente_b):
@@ -44,11 +88,12 @@ def proponer(fuentes, meta):
     huerfanas_a = [f for f in fuentes if f["situacion"] == "huerfana" and f["epoca"] == "epoca_a"]
     huerfanas_b = [f for f in fuentes if f["situacion"] == "huerfana" and f["epoca"] == "epoca_b"]
     maxima = separacion_maxima_pixeles(meta)
+    minima = separacion_minima_pixeles(meta)
     candidatas = []
     for a in huerfanas_a:
         for b in huerfanas_b:
             distancia = math.hypot(b["x"] - a["x"], b["y"] - a["y"])
-            if distancia <= maxima and brillo_parecido(a, b):
+            if pareja_plausible(a, b, distancia, minima, maxima, meta):
                 candidatas.append((distancia, a["id_fuente"], b["id_fuente"]))
     usadas, parejas = set(), []
     for _, ida, idb in sorted(candidatas):
