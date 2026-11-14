@@ -21,6 +21,7 @@ import json
 import sys
 from collections import defaultdict
 from pathlib import Path
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from modulos.m1_adquisicion.consulta_sia import DIR_DATOS
 
@@ -115,6 +116,21 @@ def _diagnostico(por_detector: dict[int, list[dict]]) -> str:
     return "\n".join(lineas)
 
 
+def _sin_parametros_de_recorte(url: str) -> str:
+    """Quita `center` y `size` de la URL, y conserva el resto de la consulta.
+
+    Las exposiciones de SPHEREx son DataLink (`.../links/spherex?ID=...`): si se
+    borrara la consulta entera, la exposición dejaría de identificarse.
+    """
+    partes = urlsplit(url)
+    consulta = [
+        (clave, valor)
+        for clave, valor in parse_qsl(partes.query, keep_blank_values=True)
+        if clave.lower() not in {"center", "size"}
+    ]
+    return urlunsplit((partes.scheme, partes.netloc, partes.path, urlencode(consulta), ""))
+
+
 def _entrada(exposicion: dict, papel: str) -> dict:
     return {
         "id_exposicion": exposicion["identificador"],
@@ -122,7 +138,7 @@ def _entrada(exposicion: dict, papel: str) -> dict:
         "mjd": exposicion["t_min"],
         "detector": exposicion["detector"],
         "coleccion": exposicion["coleccion"],
-        "url_acceso": exposicion["access_url"].split("?")[0],  # sin parámetros de recorte
+        "url_acceso": _sin_parametros_de_recorte(exposicion["access_url"]),
         "archivo_recorte": f"{exposicion['identificador']}.fits",
     }
 
