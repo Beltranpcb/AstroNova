@@ -152,12 +152,26 @@ def descargar_campo(campo: str, dir_datos: Path = DIR_DATOS, obtener=obtener_byt
             except RecorteInvalido:
                 pass  # archivo anterior corrupto: se vuelve a descargar
         if es_datalink(exposicion["url_acceso"]):
-            url = url_recorte_datalink(exposicion["url_acceso"], ra, dec, radio, obtener)
+            construir = lambda r: url_recorte_datalink(exposicion["url_acceso"], ra, dec, r, obtener)
         else:
-            url = url_recorte(exposicion["url_acceso"], ra, dec, radio)
+            construir = lambda r: url_recorte(exposicion["url_acceso"], ra, dec, r)
+
         parcial = destino.with_name(destino.name + ".parte")
         try:
-            parcial.write_bytes(obtener(url))
+            contenido = None
+            ultimo_fallo = None
+            # El servicio de recortes falla con 503 según el tamaño pedido: en las
+            # pruebas, 0,4° daba 503 y 0,2° del mismo archivo respondía 200. Se
+            # reintenta con medio lado antes de dar la exposición por perdida.
+            for radio_intento in (radio, radio / 2):
+                try:
+                    contenido = obtener(construir(radio_intento))
+                    break
+                except RuntimeError as error:
+                    ultimo_fallo = error
+            if contenido is None:
+                raise ultimo_fallo
+            parcial.write_bytes(contenido)
             faltan = extensiones_que_faltan(parcial)
             if faltan:
                 raise RecorteInvalido(
