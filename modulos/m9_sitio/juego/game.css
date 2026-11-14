@@ -112,3 +112,12 @@
   background: var(--fondo-alt);
   display: block;
 }
+
+/* Enlaces de vuelta del juego. */
+.enlaces-juego {
+  margin-left: auto;
+  display: flex;
+  gap: .9rem;
+  font-size: .82rem;
+  flex-wrap: wrap;
+}

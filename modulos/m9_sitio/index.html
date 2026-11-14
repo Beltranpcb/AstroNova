@@ -56,8 +56,10 @@
     <section class="panel">
       <h2>Visor de épocas</h2>
       <div class="visor-caja">
-        <canvas id="lienzo" width="600" height="600"></canvas>
-        <div id="cortina" data-etiqueta="A | B"></div>
+        <div class="lienzo-caja">
+          <canvas id="lienzo" width="600" height="600"></canvas>
+          <div id="cortina" data-etiqueta="A | B"></div>
+        </div>
       </div>
 
       <div class="visor-controles">
@@ -67,7 +69,7 @@
           <button id="modo-diferencia">Diferencia</button>
         </div>
         <button id="btn-reproducir">Pausa</button>
-        <button id="btn-reset">Centrar</button>
+        <button id="btn-reset">Restablecer vista</button>
       </div>
 
       <div class="aviso-sintesis" id="aviso-sintesis" hidden>
@@ -107,7 +109,8 @@
       </div>
       <button id="btn-csv">CSV</button>
     </div>
-    <div style="overflow-x:auto">
+    <div class="tabla-scroll">
+      <p class="pista-desliza">Desliza la tabla para ver todas las columnas →</p>
       <table id="tabla-candidatos">
         <thead>
           <tr>
@@ -139,21 +142,41 @@
   const portada = document.getElementById("portada");
   const app = document.getElementById("app");
 
-  const abrirApp = () => {
+  const mostrarApp = (conHistorial) => {
     portada.style.display = "none";
     app.classList.add("visible");
+    if (conHistorial) history.pushState({ vista: "app" }, "", "#app");
   };
 
-  document.getElementById("btn-explorar").addEventListener("click", abrirApp);
-
-  // Volver a la portada desde el explorador.
-  document.getElementById("btn-portada").addEventListener("click", () => {
+  const mostrarPortada = (conHistorial) => {
     app.classList.remove("visible");
     portada.style.display = "flex";
-  });
+    if (conHistorial) history.pushState({ vista: "portada" }, "", location.pathname);
+  };
+
+  document.getElementById("btn-explorar").addEventListener("click", () => mostrarApp(true));
+
+  // Volver a la portada desde el explorador.
+  document.getElementById("btn-portada").addEventListener("click", () => mostrarPortada(true));
+
+  // Los botones de campo de la portada abren la aplicación con ese campo.
+  HX.abrirApp = () => mostrarApp(true);
 
   // El juego vuelve con ../index.html#app: entra directo al explorador.
-  if (window.location.hash === "#app") abrirApp();
+  if (window.location.hash === "#app") {
+    mostrarApp(false);
+    history.replaceState({ vista: "app" }, "", "#app");
+  } else {
+    history.replaceState({ vista: "portada" }, "", location.pathname);
+  }
+
+  // El botón «atrás» del navegador vuelve a la portada en vez de salir del sitio.
+  window.addEventListener("popstate", (evento) => {
+    const vista = evento.state && evento.state.vista
+      ? evento.state.vista
+      : (window.location.hash === "#app" ? "app" : "portada");
+    if (vista === "app") mostrarApp(false); else mostrarPortada(false);
+  });
   document.getElementById("btn-jugar").addEventListener("click", () => {
     window.location.href = "juego/game.html";
   });

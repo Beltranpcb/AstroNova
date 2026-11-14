@@ -311,6 +311,15 @@
       const boton = document.getElementById(`modo-${nombre}`);
       if (boton) boton.classList.toggle("activo", nombre === modo);
     }
+    // Pausa solo tiene sentido con el parpadeo: en los otros dos modos la
+    // imagen es estática y el botón no haría nada.
+    const reproducir = document.getElementById("btn-reproducir");
+    if (reproducir) {
+      const aplica = modo === "parpadeo";
+      reproducir.hidden = !aplica;
+      reproducir.disabled = !aplica;
+      if (aplica) reproducir.textContent = HX.estado.reproduciendo ? "Pausa" : "Reproducir";
+    }
     dibujar();
   }
 

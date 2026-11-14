@@ -40,8 +40,7 @@
       for (const campo of HX.estado.indice) {
         portada.appendChild(
           boton(campo, async () => {
-            document.getElementById("portada").style.display = "none";
-            document.getElementById("app").classList.add("visible");
+            if (HX.abrirApp) HX.abrirApp();
             await HX.cargarCampo(campo.campo);
           })
         );

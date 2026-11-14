@@ -143,9 +143,12 @@ main {
 
 .visor-caja { position: relative; background: var(--fondo); display: grid; place-items: center; padding: .6rem; }
 
+/* El lienzo y la cortina viven en la misma caja: así la línea no sobresale. */
+.lienzo-caja { position: relative; display: inline-block; line-height: 0; max-width: 100%; }
+
 #lienzo {
   display: block;
-  width: min(100%, 58vh);
+  width: min(100%, 68vh);
   height: auto;
   cursor: grab;
   touch-action: none;
@@ -156,6 +159,7 @@ main {
 .visor-controles { display: flex; align-items: center; gap: .45rem; padding: .6rem .75rem; border-top: 1px solid var(--borde-suave); flex-wrap: wrap; }
 .visor-controles .grupo { display: flex; gap: .3rem; }
 .visor-controles button { font-size: .8rem; padding: .35rem .65rem; }
+.visor-controles button[hidden] { display: none; }
 
 .aviso-sintesis {
   padding: .45rem .9rem;
@@ -180,6 +184,16 @@ main {
 #cortina.visible { display: block; }
 
 /* ------------------------------------------------------------------- Tabla */
+
+/* La tabla es más ancha que un móvil: se desplaza y se avisa. */
+.tabla-scroll { overflow-x: auto; overscroll-behavior-x: contain; }
+.pista-desliza {
+  display: none;
+  margin: 0;
+  padding: .35rem .9rem 0;
+  font-size: .72rem;
+  color: var(--texto-apagado);
+}
 
 .tabla-caja { margin: 0 1.25rem 1.25rem; max-width: 1180px; }
 .tabla-cabecera {
@@ -255,6 +269,7 @@ tbody td.num { font-family: var(--mono); font-size: .8rem; }
   header.barra { padding: .6rem .75rem; }
   header.barra .campo-selector { margin-left: 0; width: 100%; }
   thead th, tbody td { padding: .45rem .6rem; }
+  .pista-desliza { display: block; }
 }
 
 @media (max-width: 560px) {
@@ -262,6 +277,20 @@ tbody td.num { font-family: var(--mono); font-size: .8rem; }
   main { padding: .75rem; gap: .75rem; }
   .ficha dl { grid-template-columns: 1fr; gap: .1rem 0; }
   .ficha dt { margin-top: .35rem; }
-  .tabla-caja { overflow-x: auto; }
   table { min-width: 640px; }
+
+  /* La cabecera ocupaba 119 px: ahora una fila y los campos se deslizan. */
+  header.barra { padding: .45rem .6rem; gap: .5rem; }
+  header.barra .titulo { font-size: .85rem; letter-spacing: .08em; }
+  header.barra .volver { font-size: .74rem; padding: .25rem .5rem; }
+  header.barra .campo-selector {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin-left: 0;
+    width: 100%;
+    padding-bottom: .15rem;
+    scrollbar-width: none;
+  }
+  header.barra .campo-selector::-webkit-scrollbar { display: none; }
+  header.barra .campo-selector button { flex: 0 0 auto; white-space: nowrap; }
 }
