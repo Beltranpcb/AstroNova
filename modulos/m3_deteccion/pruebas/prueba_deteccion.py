@@ -25,7 +25,15 @@ from astropy.wcs import WCS
 
 from modulos.m3_deteccion import deteccion_fuentes, emparejamiento, propuesta_parejas
 
-ESQUEMA_FUENTES = json.loads((Path(__file__).resolve().parents[1] / "esquemas" / "fuentes.schema.json").read_text(encoding="utf-8"))
+def _ruta_esquema(nombre):
+    """Devuelve contratos/<nombre> si existe el arbol completo; si no, esquemas/<nombre>."""
+    for base in Path(__file__).resolve().parents:
+        candidato = base / "contratos" / nombre
+        if candidato.is_file():
+            return candidato
+    return Path(__file__).resolve().parents[1] / "esquemas" / nombre
+
+ESQUEMA_FUENTES = json.loads(_ruta_esquema("fuentes.schema.json").read_text(encoding="utf-8"))
 
 LADO = 118
 ESCALA_GRADOS = 6.15 / 3600
