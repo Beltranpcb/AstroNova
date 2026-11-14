@@ -39,6 +39,9 @@ Construir el espectro infrarrojo de cada objeto en movimiento para estimar su na
 | `ajuste_planck.py` | Estima la temperatura del objeto ajustando la ley de Planck. |
 | `escritura_espectros.py` | Reúne medida, tipo, temperatura en el archivo del contrato. |
 | `pruebas/prueba_huella_espectral.py` | Comprueba el ajuste espectral sobre espectros sintéticos. |
+| `esquemas/espectros.schema.json` | Copia del contrato `contratos/espectros.schema.json` para verificar el módulo suelto. |
+| `ejemplos/campo_ejemplo/seleccion.json`, `fuentes.json`, `movimiento.json`, `espectros.json` | Copias de `contratos/ejemplos/campo_ejemplo/` para verificar el módulo suelto. |
+| `pytest.ini` | Declara el nombrado en español de las pruebas cuando el módulo se ejecuta suelto. |
 
 ## Orden de ejecución
 
