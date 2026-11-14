@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "contratos/identificacion.schema.json",
   "title": "identificacion.json: estado de catálogo de cada pareja",
-  "$comment": "ARCHIVO: contratos/identificacion.schema.json. ROL: fija la forma de identificacion.json: estado de catálogo de cada pareja. PRODUCTOR: m5_identificacion/cruce_posicional.py. CONSUMIDORES: m7_publicacion. RUTA REAL: datos/m5_identificacion/<campo>/identificacion.json. VERIFICACION: check-jsonschema --schemafile contratos/identificacion.schema.json <archivo>. No contiene lógica: solo describe datos.",
+  "$comment": "ARCHIVO: contratos/identificacion.schema.json. ROL: fija la forma de identificacion.json: estado de catálogo de cada pareja. PRODUCTOR: m5_identificacion/cruce_posicional.py. CONSUMIDORES: m7_publicacion. RUTA REAL: datos/m5_identificacion/<campo>/identificacion.json. VERIFICACION: check-jsonschema --schemafile contratos/identificacion.schema.json <archivo>. No contiene lógica: solo describe datos. AMPLIACION COMPATIBLE: catalogo admite gaia_dr3; clase_objeto, veredicto, mjd_consulta y coincidencias opcionales.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -71,6 +71,7 @@
             "enum": [
               "jpl_sb_ident",
               "mpchecker",
+              "gaia_dr3",
               null
             ]
           },
@@ -111,6 +112,104 @@
           "archivo_cache": {
             "type": "string",
             "description": "Respuesta guardada, relativa a datos/m5_identificacion/cache/."
+          },
+          "clase_objeto": {
+            "description": "Clase catalogada del objeto, según la fuente que la aporta. desconocida si ningún catálogo la da.",
+            "enum": [
+              "asteroide",
+              "cometa",
+              "planeta_enano",
+              "estrella",
+              "enana_marron",
+              "galaxia",
+              "desconocida",
+              null
+            ]
+          },
+          "veredicto": {
+            "description": "coincidencia_compatible: una coincidencia dentro de la tolerancia. coincidencia_ambigua: varias. sin_coincidencia_concluyente: ninguna; no equivale a un objeto nuevo.",
+            "enum": [
+              "coincidencia_compatible",
+              "coincidencia_ambigua",
+              "sin_coincidencia_concluyente"
+            ]
+          },
+          "mjd_consulta": {
+            "type": "number",
+            "description": "Fecha usada en la efeméride, imprescindible en cuerpos móviles."
+          },
+          "coincidencias": {
+            "type": "array",
+            "description": "Todas las coincidencias dentro de la tolerancia, ordenadas por distancia creciente.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "nombre",
+                "catalogo",
+                "distancia_segarc"
+              ],
+              "properties": {
+                "nombre": {
+                  "type": "string"
+                },
+                "designacion": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Número o designación oficial, por ejemplo 4 o 1P."
+                },
+                "catalogo": {
+                  "enum": [
+                    "jpl_sb_ident",
+                    "mpchecker",
+                    "gaia_dr3"
+                  ]
+                },
+                "clase_objeto": {
+                  "description": "Clase catalogada del objeto, según la fuente que la aporta. desconocida si ningún catálogo la da.",
+                  "enum": [
+                    "asteroide",
+                    "cometa",
+                    "planeta_enano",
+                    "estrella",
+                    "enana_marron",
+                    "galaxia",
+                    "desconocida",
+                    null
+                  ]
+                },
+                "ra_grados": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 360
+                },
+                "dec_grados": {
+                  "type": "number",
+                  "minimum": -90,
+                  "maximum": 90
+                },
+                "distancia_segarc": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "incertidumbre_segarc": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "minimum": 0
+                },
+                "enlace": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "URL de la fuente, si existe."
+                }
+              }
+            }
           }
         }
       }

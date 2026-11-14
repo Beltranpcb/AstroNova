@@ -54,24 +54,107 @@
       "ajustes_plantilla": [
         {
           "tipo": "asteroide_rocoso",
-          "chi2_reducido": 1.1
+          "chi2_reducido": 1.1,
+          "grados_libertad": 5,
+          "n_puntos": 6,
+          "origen_plantilla": "sintetica",
+          "referencia_plantilla": null,
+          "escala": 1.9
         },
         {
           "tipo": "asteroide_oscuro",
-          "chi2_reducido": 2.7
+          "chi2_reducido": 2.7,
+          "grados_libertad": 5,
+          "n_puntos": 6,
+          "origen_plantilla": "sintetica",
+          "referencia_plantilla": null,
+          "escala": 2.1
         },
         {
           "tipo": "cometa",
-          "chi2_reducido": 6.4
+          "chi2_reducido": 6.4,
+          "grados_libertad": 5,
+          "n_puntos": 6,
+          "origen_plantilla": "sintetica",
+          "referencia_plantilla": null,
+          "escala": 2.0
         },
         {
           "tipo": "enana_marron",
-          "chi2_reducido": 9.8
+          "chi2_reducido": 9.8,
+          "grados_libertad": 5,
+          "n_puntos": 6,
+          "origen_plantilla": "sintetica",
+          "referencia_plantilla": null,
+          "escala": 1.4
         }
       ],
       "temperatura_k": 255.0,
       "incertidumbre_temperatura_k": 20.0,
-      "pico_wien_micras": 11.36
+      "pico_wien_micras": 11.36,
+      "origen": "sintetico",
+      "advertencias": [
+        "plantillas_sinteticas",
+        "cuerpo_negro_fuera_de_rango",
+        "luz_reflejada_y_termica",
+        "agrupado_por_detector"
+      ],
+      "calidad": {
+        "n_puntos": 6,
+        "cobertura_micras": [
+          0.92,
+          4.7
+        ],
+        "senal_ruido_mediana": 20.0,
+        "resolucion_espectral": null
+      },
+      "composicion": {
+        "version_metodo": "ejemplo-0",
+        "continuo": "polinomio_grado_2",
+        "resolucion_espectral": null,
+        "origen_referencias": "sintetica",
+        "moleculas": [
+          {
+            "molecula": "agua",
+            "formula": "H2O",
+            "banda_micras": [
+              2.5,
+              3.0
+            ],
+            "estado": "datos_insuficientes",
+            "metrica": null,
+            "explicacion": "Con 6 puntos por detector no se resuelve la banda.",
+            "ambigua_con": [],
+            "referencia": "Valor de ejemplo, sin referencia real.",
+            "advertencias": [
+              "agrupado_por_detector"
+            ]
+          },
+          {
+            "molecula": "dioxido_de_carbono",
+            "formula": "CO2",
+            "banda_micras": [
+              4.2,
+              4.4
+            ],
+            "estado": "compatible",
+            "metrica": {
+              "nombre": "delta_chi2",
+              "valor": 4.1,
+              "incertidumbre": null,
+              "grados_libertad": 2
+            },
+            "explicacion": "El flujo sube hacia 4,1 micras, pero un solo punto no asocia una banda concreta.",
+            "ambigua_con": [
+              "luz_reflejada_y_termica"
+            ],
+            "referencia": "Valor de ejemplo, sin referencia real.",
+            "advertencias": [
+              "cobertura_espectral_parcial"
+            ]
+          }
+        ]
+      }
     }
   ]
 }

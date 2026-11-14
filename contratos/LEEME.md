@@ -25,6 +25,8 @@ Los módulos de HUELLA X no se importan entre sí: se comunican por archivos de 
 | `contratos/espectros.schema.json` | espectros.json | m6 | m7, m9 | `datos/m6_huella_espectral/<campo>/espectros.json` |
 | `contratos/candidatos.schema.json` | candidatos.json | m7 | m9 | `datos/m7_publicacion/<campo>/candidatos.json` |
 | `contratos/campos.schema.json` | campos.json | m7 | m9 | `datos/m7_publicacion/campos.json` |
+| `contratos/plantillas.schema.json` | plantillas.json | m6 (`publicar_plantillas`) | m7, m9 | `datos/m6_huella_espectral/plantillas.json` |
+| `contratos/catalogo.schema.json` | catalogo.json | m7 (propuesto: `indice_catalogo.py`) | m9 | `datos/m7_publicacion/catalogo.json` |
 | `contratos/guia_visual.md` | variables de estilo | equipo | m8, m9 | `copiadas a mano en cada estilo.css` |
 
 Los archivos intermedios internos de un módulo (por ejemplo `detecciones.json` dentro de m3) no tienen contrato: ningún otro módulo los lee.
@@ -59,10 +61,27 @@ check-jsonschema --schemafile contratos/identificacion.schema.json contratos/eje
 check-jsonschema --schemafile contratos/espectros.schema.json contratos/ejemplos/campo_ejemplo/espectros.json
 check-jsonschema --schemafile contratos/candidatos.schema.json contratos/ejemplos/campo_ejemplo/candidatos.json
 check-jsonschema --schemafile contratos/campos.schema.json contratos/ejemplos/campos.json
+check-jsonschema --schemafile contratos/catalogo.schema.json contratos/ejemplos/catalogo.json
+check-jsonschema --schemafile contratos/plantillas.schema.json contratos/ejemplos/plantillas.json
 ```
 
-Criterio de aceptación: los ocho comandos terminan con código 0.
+Criterio de aceptación: los diez comandos terminan con código 0.
 
 ## Regla de cambio
 
 Un contrato solo cambia en un pull request propio, que actualiza a la vez el esquema con su ejemplo, avisado a los cuatro lotes. Un cambio incompatible sube `version_contrato`.
+
+## Ampliación compatible (análisis de objetos)
+
+Todos los campos nuevos son **opcionales**: ninguno entra en `required`, así que los datos anteriores siguen validando y `version_contrato` se mantiene en `"1"`.
+
+| Contrato | Campos nuevos | Para qué |
+|---|---|---|
+| `meta` | `origen`, `wcs` | Marcar datos reales o sintéticos; convertir un clic en RA/DEC sin inventar coordenadas. |
+| `identificacion` | `clase_objeto`, `veredicto`, `mjd_consulta`, `coincidencias`; `catalogo` admite `gaia_dr3` | Varias coincidencias ordenadas, ambigüedad y «sin coincidencia concluyente». |
+| `espectros` | `origen`, `advertencias`, `calidad`, `composicion`; en `ajustes_plantilla`: `grados_libertad`, `n_puntos`, `escala`, `origen_plantilla`, `referencia_plantilla` | Chi² con grados de libertad, avisos de interpretación y composición molecular (compatible, candidata, detectada, datos insuficientes). |
+| `candidatos` | `clase_objeto`, `veredicto_identificacion`, `origen_espectro`, `advertencias`, `tiene_composicion` | Lo que la web necesita sin releer otros archivos. |
+| `plantillas` (nuevo) | `plantillas[]` con curva normalizada, `origen_plantilla` y `referencia` | Dibujar las plantillas sobre el espectro y declarar si son sintéticas. |
+| `catalogo` (nuevo) | `objetos[]` con clasificación, datos disponibles y `relacionados` | Catálogo navegable; «misma clasificación» y «espectros similares» son listas distintas. |
+
+Los ejemplos de `meta`, `espectros` y `catalogo` ya usan los campos nuevos. Los de `identificacion` y `candidatos` se actualizan cuando m5 y m7 los produzcan, porque sus pruebas comparan la salida con el ejemplo.

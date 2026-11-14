@@ -32,5 +32,23 @@
     "epoca_a": "epoca_a.png",
     "epoca_b": "epoca_b.png",
     "diferencia": "diferencia.png"
+  },
+  "origen": "sintetico",
+  "wcs": {
+    "proyeccion": "TAN",
+    "crval_ra_grados": 150.0,
+    "crval_dec_grados": 2.0,
+    "crpix_x": 58.5,
+    "crpix_y": 58.5,
+    "cd": [
+      [
+        -0.0017083333333333334,
+        0.0
+      ],
+      [
+        0.0,
+        0.0017083333333333334
+      ]
+    ]
   }
 }
