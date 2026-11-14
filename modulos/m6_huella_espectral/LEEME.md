@@ -105,6 +105,19 @@ significancia S en sigmas, con un grado de libertad.
 Alternativas consideradas: minerales hidratados (OH) para H2O en asteroides, hidrocarburos C-H para
 CH4 en cometas, la banda de CH4 a 2,3 µm para NH3. Con tipo indeterminado nada pasa de candidata.
 La resolución es la nominal de SPHEREx (R ≈ 41 hasta 2,4 µm, 35 hasta 3,8, 110 hasta 4,4 y 130 hasta 5).
-No se interpola para ganar resolución. Prueba de falsos positivos: 270 espectros sintéticos sin rasgos
-(continuo lineal, térmico y de luz reflejada, tres tipos de objeto) no dan ninguna candidata ni detección.
+No se interpola para ganar resolución.
+
+Calibración con espectros sintéticos sin rasgos (continuo lineal, térmico y de luz reflejada; 80 a 120
+puntos; tres tipos de objeto): S tiene desviación típica 0,95-1,1, como debe, y **ningún** espectro da
+`detectada`. Con cinco bandas evaluadas a 3 sigmas, alrededor del 1-3 % de los espectros sin rasgos
+muestra una `candidata` por azar: por eso `candidata` no es una detección.
+
+Límite conocido: el CO (4,55-4,75 µm) necesita 6 puntos libres entre 4,80 y 5,0 µm para su continuo;
+con el muestreo nominal suele quedar en `datos_insuficientes`. No se relaja el requisito porque con 4
+puntos por flanco aparecen candidatas falsas en el 10 % de los espectros.
+
+Datos de demostración: `--anotar` añade la composición a un `espectros.json` ya publicado
+(`python -m modulos.m6_huella_espectral.identificacion_molecular --anotar datos/m7_publicacion`). En el
+pipeline real la composición llega por `escritura_espectros.py`.
+
 La validación con observaciones reales está pendiente.

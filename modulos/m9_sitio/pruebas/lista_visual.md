@@ -85,3 +85,11 @@ Servir el repositorio desde la raíz y abrir
 - [ ] Sin espectro no se dibuja ninguna curva y lo dice.
 - [ ] «Misma clasificación» y «Espectros más similares» son listas distintas; los similares muestran χ²ᵣ, intervalo y puntos.
 - [ ] «Comparar» abre el comparador con A y B; «Ver en el explorador» abre el campo con el candidato elegido.
+
+## Composición espectral (fichas del explorador y del catálogo)
+
+- [ ] Solo aparece si el candidato tiene espectro con `composicion`; un artefacto o un objeto sin espectro no la muestra.
+- [ ] Las franjas de las bandas se distinguen de los puntos medidos y la nota dice que son teóricas.
+- [ ] Cada molécula lleva su estado escrito (no solo color), S en sigmas, explicación y referencia.
+- [ ] Luhman 16 A (demo): CH4 «Detectada»; la roca oscura de Slipher: H2O «Candidata» con minerales hidratados como alternativa.
+- [ ] El resumen nunca cuenta una candidata como detección.

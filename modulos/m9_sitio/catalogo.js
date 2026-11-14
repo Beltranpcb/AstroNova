@@ -124,6 +124,7 @@
       </div>
       <div class="cat-grafico" ${C.tieneEspectro(o) ? "" : "hidden"}><canvas id="cat-grafico"></canvas></div>
       <p class="cmp-nota" id="cat-grafico-nota">${C.tieneEspectro(o) ? "" : esc(C.ESPECTRO[o.datos.espectro]) + ": no se dibuja ninguna curva."}</p>
+      <div id="cat-composicion" class="composicion" hidden></div>
       <div class="cat-columnas">
         <section><h4>Misma clasificación</h4>${misma}</section>
         <section><h4>Espectros más similares</h4>${similares}</section>
@@ -147,6 +148,10 @@
     if (est.actual !== o.id_objeto) return; // el usuario ya eligió otro
     const puntos = espectro ? window.HXComparador.puntosValidos(espectro) : [];
     if (!puntos.length) { $("cat-grafico-nota").textContent = "No se pudo leer el espectro del campo."; return; }
+    if (HX.pintarComposicion) {
+      const origen = { real: "real", sintetico: "sintetico" }[o.datos.espectro] || null;
+      HX.pintarComposicion($("cat-composicion"), espectro, origen);
+    }
     $("cat-grafico-nota").textContent =
       `${puntos.length} puntos medidos, ${coma(puntos[0].longitud_onda_micras, 2)}–${coma(puntos[puntos.length - 1].longitud_onda_micras, 2)} µm · ${C.ESPECTRO[o.datos.espectro]}.`;
     est.grafico = new Chart($("cat-grafico"), {

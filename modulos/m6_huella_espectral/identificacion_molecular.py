@@ -286,9 +286,32 @@ def analizar_campo(campo, raiz_datos="datos"):
         "campo": campo, "espectros": espectros})
 
 
+def anotar_espectros(ruta):
+    """Añade `composicion` a un espectros.json ya escrito (contrato), usando su tipo y agrupación.
+
+    Pensado para los datos de demostración de m9, que se generan ya publicados: así el
+    cálculo sigue estando solo aquí. En el pipeline real la composición llega por
+    escritura_espectros.py. `ruta` puede ser un archivo o un directorio con */espectros.json.
+    Devuelve las rutas reescritas.
+    """
+    ruta = Path(ruta)
+    archivos = sorted(ruta.glob("*/espectros.json")) if ruta.is_dir() else [ruta]
+    for archivo in archivos:
+        documento = leer_json(archivo)
+        for espectro in documento["espectros"]:
+            espectro["composicion"] = analizar(espectro["puntos"], espectro.get("agrupacion", "banda"), espectro.get("tipo"))
+        escribir_json(archivo, documento)
+    return archivos
+
+
 if __name__ == "__main__":
+    if len(sys.argv) == 3 and sys.argv[1] == "--anotar":
+        for archivo in anotar_espectros(sys.argv[2]):
+            print("composición añadida a %s" % archivo)
+        sys.exit(0)
     if len(sys.argv) != 2:
-        sys.exit("Uso: python -m modulos.m6_huella_espectral.identificacion_molecular <campo>")
+        sys.exit("Uso: python -m modulos.m6_huella_espectral.identificacion_molecular <campo>\n"
+                 "     python -m modulos.m6_huella_espectral.identificacion_molecular --anotar <espectros.json | directorio>")
     ruta_escrita = analizar_campo(sys.argv[1])
     for espectro in leer_json(ruta_escrita)["espectros"]:
         estados = ", ".join("%s=%s" % (m["formula"], m["estado"]) for m in espectro["composicion"]["moleculas"])

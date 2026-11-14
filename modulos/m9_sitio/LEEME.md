@@ -53,6 +53,8 @@ el código de otro.
 | `comparador.js` | Dibuja el comparador de espectros (selectores, gráfico con incertidumbres, avisos, CSV y PNG). |
 | `catalogo_logica.js` | Lógica pura del catálogo: búsqueda, filtros y textos de cada objeto. |
 | `catalogo.js` | Dibuja el catálogo navegable, la ficha del objeto y sus dos listas de relacionados. |
+| `composicion_logica.js` | Lógica pura de «Composición espectral»: cuándo se muestra, orden y textos. |
+| `composicion.js` | Dibuja «Composición espectral» en la ficha del explorador y en la del catálogo. |
 | `ejemplos/generar_datos.py` | Genera datos de demostración conformes a los contratos. |
 | `pruebas/lista_visual.md` | Comprobaciones manuales de la web. |
 
@@ -95,12 +97,22 @@ tiene tres pestañas:
 
 Los datos de demostración llevan `origen: "sintetico"` y la web lo muestra en cada objeto.
 
+## Composición espectral
+
+Las fichas del explorador y del catálogo muestran «Composición espectral» solo si el espectro es
+utilizable y `espectros.json` trae `composicion` (m6, `identificacion_molecular.py`). Se ve el
+espectro medido con sus errores, las ventanas de referencia como franjas (teóricas, no medidas)
+y una tarjeta por molécula con su estado escrito (detectada, candidata, compatible, sin rasgo o
+datos insuficientes), la significancia S en sigmas, la explicación del criterio, las otras
+explicaciones posibles, las advertencias y la referencia de la banda. La web no calcula nada.
+
 ## Datos de demostración
 
 Mientras el pipeline no produce datos reales:
 
 ```bash
 python modulos/m9_sitio/ejemplos/generar_datos.py
+python -m modulos.m6_huella_espectral.identificacion_molecular --anotar datos/m7_publicacion  # composición (m6)
 python -m modulos.m7_publicacion.indice_catalogo     # catálogo navegable sobre esos datos
 ```
 
@@ -121,7 +133,7 @@ curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8765/modulos/m9_sitio/
 Pruebas de lógica:
 
 ```bash
-node --test modulos/m9_sitio/pruebas/prueba_sitio.js modulos/m9_sitio/pruebas/prueba_comparador.js modulos/m9_sitio/pruebas/prueba_catalogo.js
+node --test modulos/m9_sitio/pruebas/prueba_sitio.js modulos/m9_sitio/pruebas/prueba_comparador.js modulos/m9_sitio/pruebas/prueba_catalogo.js modulos/m9_sitio/pruebas/prueba_composicion.js
 ```
 
 Comprobaciones manuales: `pruebas/lista_visual.md`.
