@@ -39,8 +39,21 @@ def leer_cabeceras(ruta_fits):
 def construir_meta(seleccion, cabeceras):
     """Monta meta.json según contratos/meta.schema.json. `cabeceras` = {papel: (primaria, imagen, forma)}."""
     detectores = {p: int(cabeceras[p][0]["DETECTOR"]) for p in PAPELES}
-    if len(set(detectores.values())) != 1:
-        raise ValueError("las tres imágenes deben ser del mismo detector; hay %s" % detectores)
+    if detectores["epoca_a"] != detectores["epoca_b"]:
+        raise ValueError(
+            "las épocas A y B deben ser del mismo detector (es lo que mide el "
+            "movimiento); hay %s" % detectores
+        )
+    if detectores["plantilla"] != detectores["epoca_a"]:
+        # DR1 no siempre tiene una visita lejana del mismo detector. La plantilla
+        # solo sirve para identificar las estrellas fijas, así que se acepta la de
+        # otro detector, avisando: cambia la banda, no la posición de las estrellas.
+        print(
+            "AVISO: la plantilla es del detector %d y las épocas del %d; "
+            "se usa igualmente para restar estrellas fijas."
+            % (detectores["plantilla"], detectores["epoca_a"]),
+            file=sys.stderr,
+        )
     formas = {cabeceras[p][2] for p in PAPELES}
     if len(formas) != 1:
         raise ValueError("los FITS alineados no comparten forma: %s" % formas)
