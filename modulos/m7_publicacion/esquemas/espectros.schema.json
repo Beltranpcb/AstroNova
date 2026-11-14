@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "contratos/espectros.schema.json",
   "title": "espectros.json: huella espectral de cada pareja candidata",
-  "$comment": "ARCHIVO: contratos/espectros.schema.json. ROL: fija la forma de espectros.json: huella espectral de cada pareja candidata. PRODUCTOR: m6_huella_espectral/escritura_espectros.py. CONSUMIDORES: m7_publicacion, m9_sitio. RUTA REAL: datos/m6_huella_espectral/<campo>/espectros.json, copiado a datos/m7_publicacion/<campo>/espectros.json. VERIFICACION: check-jsonschema --schemafile contratos/espectros.schema.json <archivo>. No contiene lógica: solo describe datos.",
+  "$comment": "ARCHIVO: contratos/espectros.schema.json. ROL: fija la forma de espectros.json: huella espectral de cada pareja candidata. PRODUCTOR: m6_huella_espectral/escritura_espectros.py. CONSUMIDORES: m7_publicacion, m9_sitio. RUTA REAL: datos/m6_huella_espectral/<campo>/espectros.json, copiado a datos/m7_publicacion/<campo>/espectros.json. VERIFICACION: check-jsonschema --schemafile contratos/espectros.schema.json <archivo>. No contiene lógica: solo describe datos. AMPLIACION COMPATIBLE (version_contrato 1): origen, advertencias, calidad, composicion y, en ajustes_plantilla, grados_libertad, n_puntos, origen_plantilla, referencia_plantilla; todos opcionales.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -130,6 +130,30 @@
                   "type": "number",
                   "description": "Chi cuadrado reducido del ajuste.",
                   "minimum": 0
+                },
+                "grados_libertad": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "N - k del chi cuadrado."
+                },
+                "n_puntos": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Puntos usados en el ajuste."
+                },
+                "origen_plantilla": {
+                  "description": "sintetica: construida con los rasgos de la especificación. bibliografia: curva medida citada en referencia_plantilla.",
+                  "enum": [
+                    "sintetica",
+                    "bibliografia"
+                  ]
+                },
+                "referencia_plantilla": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Cita de la plantilla; nula si es sintética."
                 }
               }
             }
@@ -157,6 +181,222 @@
               "number",
               "null"
             ]
+          },
+          "origen": {
+            "description": "Procedencia de los datos: real (medido en SPHEREx), sintetico (generado para demostración o prueba) o pendiente (aún sin datos).",
+            "enum": [
+              "real",
+              "sintetico",
+              "pendiente"
+            ]
+          },
+          "advertencias": {
+            "type": "array",
+            "description": "Códigos de advertencia de calidad o de interpretación. plantillas_sinteticas: las plantillas no son curvas de bibliografía. cuerpo_negro_fuera_de_rango: un ajuste de Planck en 0,75-5 micras no fija la temperatura de un cuerpo frío. luz_reflejada_y_termica: el flujo mezcla luz solar reflejada y emisión térmica. agrupado_por_detector: la resolución se degrada a 6 puntos. errores_correlacionados: el chi cuadrado diagonal no basta. La web los traduce a texto.",
+            "items": {
+              "enum": [
+                "plantillas_sinteticas",
+                "cuerpo_negro_fuera_de_rango",
+                "luz_reflejada_y_termica",
+                "senal_ruido_baja",
+                "agrupado_por_detector",
+                "cobertura_espectral_parcial",
+                "resolucion_incompatible",
+                "errores_correlacionados"
+              ]
+            },
+            "uniqueItems": true
+          },
+          "calidad": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Resumen de calidad del espectro, calculado por m6.",
+            "required": [
+              "n_puntos"
+            ],
+            "properties": {
+              "n_puntos": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Puntos válidos usados."
+              },
+              "cobertura_micras": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "items": {
+                  "type": "number"
+                },
+                "description": "Longitud de onda mínima y máxima cubiertas, en micras."
+              },
+              "senal_ruido_mediana": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Mediana de la señal/ruido de los puntos."
+              },
+              "resolucion_espectral": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "exclusiveMinimum": 0,
+                "description": "R = lambda / delta lambda efectivo de los datos."
+              }
+            }
+          },
+          "composicion": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "description": "Análisis de composición molecular. Nulo o ausente si no hay espectro utilizable.",
+            "required": [
+              "version_metodo",
+              "continuo",
+              "moleculas"
+            ],
+            "properties": {
+              "version_metodo": {
+                "type": "string",
+                "description": "Versión del método de m6 (identificacion_molecular)."
+              },
+              "continuo": {
+                "type": "string",
+                "description": "Método de ajuste del continuo, por ejemplo polinomio_grado_2."
+              },
+              "resolucion_espectral": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "exclusiveMinimum": 0,
+                "description": "R usada al degradar las plantillas."
+              },
+              "origen_referencias": {
+                "enum": [
+                  "sintetica",
+                  "bibliografia"
+                ]
+              },
+              "moleculas": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "molecula",
+                    "formula",
+                    "banda_micras",
+                    "estado"
+                  ],
+                  "properties": {
+                    "molecula": {
+                      "enum": [
+                        "agua",
+                        "metano",
+                        "dioxido_de_carbono",
+                        "monoxido_de_carbono",
+                        "amoniaco"
+                      ]
+                    },
+                    "formula": {
+                      "type": "string",
+                      "description": "Fórmula química, por ejemplo CH4."
+                    },
+                    "banda_micras": {
+                      "type": "array",
+                      "minItems": 2,
+                      "maxItems": 2,
+                      "items": {
+                        "type": "number",
+                        "minimum": 0.75,
+                        "maximum": 5.0
+                      },
+                      "description": "Intervalo de la banda de referencia. Orientativo, no es un umbral rígido."
+                    },
+                    "estado": {
+                      "description": "compatible < candidata < detectada. datos_insuficientes cuando no hay puntos, cobertura o calidad para decidir. detectada exige criterios estadísticos predefinidos.",
+                      "enum": [
+                        "compatible",
+                        "candidata",
+                        "detectada",
+                        "datos_insuficientes"
+                      ]
+                    },
+                    "metrica": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "additionalProperties": false,
+                      "required": [
+                        "nombre",
+                        "valor"
+                      ],
+                      "description": "Significación del rasgo. Nula si faltan datos. Nunca un porcentaje de confianza sin calibrar.",
+                      "properties": {
+                        "nombre": {
+                          "type": "string",
+                          "description": "Por ejemplo delta_chi2 o significancia_sigma."
+                        },
+                        "valor": {
+                          "type": "number"
+                        },
+                        "incertidumbre": {
+                          "type": [
+                            "number",
+                            "null"
+                          ],
+                          "minimum": 0
+                        },
+                        "grados_libertad": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "minimum": 1
+                        }
+                      }
+                    },
+                    "explicacion": {
+                      "type": "string",
+                      "description": "Criterio aplicado para asignar el estado, en una frase."
+                    },
+                    "ambigua_con": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Moléculas o procesos que explican igual de bien el rasgo."
+                    },
+                    "referencia": {
+                      "type": "string",
+                      "description": "Fuente espectroscópica de la banda."
+                    },
+                    "advertencias": {
+                      "type": "array",
+                      "description": "Códigos de advertencia de calidad o de interpretación. plantillas_sinteticas: las plantillas no son curvas de bibliografía. cuerpo_negro_fuera_de_rango: un ajuste de Planck en 0,75-5 micras no fija la temperatura de un cuerpo frío. luz_reflejada_y_termica: el flujo mezcla luz solar reflejada y emisión térmica. agrupado_por_detector: la resolución se degrada a 6 puntos. errores_correlacionados: el chi cuadrado diagonal no basta. La web los traduce a texto.",
+                      "items": {
+                        "enum": [
+                          "plantillas_sinteticas",
+                          "cuerpo_negro_fuera_de_rango",
+                          "luz_reflejada_y_termica",
+                          "senal_ruido_baja",
+                          "agrupado_por_detector",
+                          "cobertura_espectral_parcial",
+                          "resolucion_incompatible",
+                          "errores_correlacionados"
+                        ]
+                      },
+                      "uniqueItems": true
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
