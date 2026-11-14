@@ -34,6 +34,8 @@ Encontrar las fuentes que cambian de posición entre la época A y la época B.
 | `emparejamiento.py` | Separa las fuentes estacionarias de las fuentes huérfanas. |
 | `propuesta_parejas.py` | Propone parejas A-B entre las fuentes huérfanas. |
 | `pruebas/prueba_deteccion.py` | Comprueba la detección sobre imágenes de ruido con fuentes inyectadas. |
+| `esquemas/fuentes.schema.json` | Copia del contrato `contratos/fuentes.schema.json` para verificar el módulo suelto. |
+| `pytest.ini` | Declara el nombrado en español de las pruebas cuando el módulo se ejecuta suelto. |
 
 ## Orden de ejecución
 
@@ -64,4 +66,4 @@ Toda detección se trata como candidata a objeto móvil, nunca como asteroide co
 
 ## Estado
 
-Esqueleto sin código: el comando de verificación falla hasta que el lote implemente el módulo.
+Implementado. El comando de verificación pasa sobre imágenes sintéticas. Pendiente de probar sobre un recorte real de SPHEREx: en especial el número del bit `SOURCE` de FLAGS (supuesto 21, leído de la cabecera `MP_SOURCE` si existe) y los umbrales iniciales (5 sigmas, 60 segundos de arco por hora, razón de brillo 2).
