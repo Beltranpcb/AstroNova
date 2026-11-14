@@ -2,19 +2,21 @@
 # ARCHIVO: modulos/m1_adquisicion/consulta_sia.py
 # MODULO: m1_adquisicion (Lote A)
 # ROL: Lista las exposiciones de SPHEREx que cubren un campo objetivo.
-# LEE: campos_objetivo.json; servicio SIA2 de IRSA.
+# LEE: campos_objetivo.json; servicio TAP de IRSA (tabla spherex.obscore).
 # PRODUCE: datos/m1_adquisicion/<campo>/listado_exposiciones.json (intermedio interno).
 # FUNCIONAMIENTO PREVISTO:
 #   Recibe de campos_objetivo.json: centro, radio del campo.
-#   1. Consultar SIA2 en las colecciones de SPHEREx  ->  tabla de exposiciones
+#   1. Consultar TAP en las colecciones de SPHEREx  ->  tabla de exposiciones
 #   2. Ordenar por t_min  ->  listado_exposiciones.json
 #   Entrega a seleccion_epocas.py: listado_exposiciones.json.
 # VERIFICACION: El listado sale ordenado por t_min; cada fila tiene identificador, t_min, detector, access_url.
-# ESTADO: Esqueleto sin código. Este archivo solo documenta el trabajo pendiente.
+# NOTA: el servicio SIA del IRSA solo cubre wise/twomass/ptf y no indexa SPHEREx;
+#       la vía que responde es TAP sobre spherex.obscore (ver issue #2).
 # ============================================================================
 from __future__ import annotations
 
 import argparse
+import csv
 import io
 import json
 import re
@@ -27,7 +29,9 @@ RAIZ = Path(__file__).resolve().parents[2]
 RUTA_CAMPOS = Path(__file__).with_name("campos_objetivo.json")
 DIR_DATOS = RAIZ / "datos" / "m1_adquisicion"
 
-URL_SIA2 = "https://irsa.ipac.caltech.edu/SIA"
+# El servicio SIA del IRSA no indexa SPHEREx (solo wise, twomass y ptf); la
+# tabla ObsCore de SPHEREx se consulta por TAP.
+URL_TAP = "https://irsa.ipac.caltech.edu/TAP/sync"
 COLECCIONES = ("spherex_qr3", "spherex_dr1", "spherex_dr1_deep")
 
 CLAVES_CAMPO = ("campo", "nombre", "ra_grados", "dec_grados", "radio_grados")
@@ -115,7 +119,9 @@ def normalizar_fila(fila: dict, coleccion: str) -> dict | None:
     if detector is None:
         return None
     return {
-        "identificador": identificador_de_url(url),
+        # Las filas de TAP ya traen un identificador propio (obs_id + detector);
+        # las de SIA se deducen del nombre del archivo.
+        "identificador": _escalar(fila.get("identificador")) or identificador_de_url(url),
         "t_min": float(t_min),
         "detector": detector,
         "access_url": url,
@@ -151,28 +157,71 @@ def construir_listado(campo: dict, filas_por_coleccion: dict[str, list[dict]]) -
 
 # --- red -------------------------------------------------------------------
 
-def consultar_sia2(ra: float, dec: float, radio: float, coleccion: str,
-                   reintentos: int = 3, espera_s: float = 2.0, timeout_s: float = 120.0) -> list[dict]:
-    """Pide a IRSA las exposiciones de una colección que cubren el círculo (ra, dec, radio), en grados."""
-    import requests
-    from astropy.io.votable import parse_single_table
+CONSULTA_TAP = (
+    "SELECT obs_id, s_ra, s_dec, t_min, access_url, obs_collection "
+    "FROM spherex.obscore "
+    "WHERE obs_collection = '{coleccion}' "
+    "AND 1=CONTAINS(POINT('ICRS', s_ra, s_dec), CIRCLE('ICRS', {ra}, {dec}, {radio}))"
+)
 
-    parametros = {"COLLECTION": coleccion, "POS": f"circle {ra} {dec} {radio}"}
+
+def detector_de_datalink(url: str) -> int | None:
+    """Detector a partir de la URL de DataLink (`.../D3`)."""
+    m = re.search(r"/D([1-6])\s*$", str(url))
+    return int(m.group(1)) if m else None
+
+
+def fila_tap_a_sia(fila: dict) -> dict | None:
+    """Fila de `spherex.obscore` -> forma que entiende `normalizar_fila`.
+
+    No es una fila SIA de verdad: se rellenan los campos que la normalización
+    necesita (`access_url`, `t_min`, `calib_level`, `energy_bandpassname`)
+    para no duplicar la lógica de deduplicación y orden.
+    """
+    url = (fila.get("access_url") or "").strip()
+    detector = detector_de_datalink(url)
+    if not url or detector is None:
+        return None
+    try:
+        t_min = float(fila["t_min"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    return {
+        "access_url": url,
+        "t_min": t_min,
+        "calib_level": 2,
+        "energy_bandpassname": f"SPHEREx-D{detector}",
+        "identificador": f"{fila.get('obs_id', 'exposicion')}_D{detector}",
+    }
+
+
+def consultar_tap(ra: float, dec: float, radio: float, coleccion: str,
+                  reintentos: int = 3, espera_s: float = 2.0, timeout_s: float = 120.0) -> list[dict]:
+    """Pide a IRSA por TAP las exposiciones de una colección que cubren el círculo (grados)."""
+    import requests
+
+    parametros = {
+        "QUERY": CONSULTA_TAP.format(coleccion=coleccion, ra=ra, dec=dec, radio=radio),
+        "FORMAT": "csv",
+    }
     ultimo_error: Exception | None = None
     for intento in range(1, reintentos + 1):
         try:
-            respuesta = requests.get(URL_SIA2, params=parametros, timeout=timeout_s)
+            respuesta = requests.get(URL_TAP, params=parametros, timeout=timeout_s)
             respuesta.raise_for_status()
-            tabla = parse_single_table(io.BytesIO(respuesta.content)).to_table(use_names_over_ids=True)
-            return [{nombre: fila[nombre] for nombre in tabla.colnames} for fila in tabla]
-        except Exception as error:  # red, HTTP 5xx o VOTable de error de IRSA
+            texto = respuesta.text
+            if "QUERY_STATUS" in texto and "ERROR" in texto:
+                raise RuntimeError(f"IRSA devolvió un error para {coleccion}: {texto[:200]}")
+            filas = [fila_tap_a_sia(f) for f in csv.DictReader(io.StringIO(texto))]
+            return [f for f in filas if f is not None]
+        except Exception as error:  # red, HTTP 5xx o error de IRSA
             ultimo_error = error
             if intento < reintentos:
                 time.sleep(espera_s * intento)
-    raise RuntimeError(f"SIA2 falló en {coleccion} tras {reintentos} intentos: {ultimo_error}")
+    raise RuntimeError(f"TAP falló en {coleccion} tras {reintentos} intentos: {ultimo_error}")
 
 
-def consultar_campo(campo: dict, consulta=consultar_sia2) -> dict:
+def consultar_campo(campo: dict, consulta=consultar_tap) -> dict:
     """Consulta las tres colecciones y devuelve el listado. `consulta` se puede sustituir en pruebas."""
     filas: dict[str, list[dict]] = {}
     errores: list[str] = []
