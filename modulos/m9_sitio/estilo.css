@@ -336,6 +336,11 @@ header.barra .vistas button { font-size: .82rem; padding: .3rem .7rem; }
 .mol-compatible .mol-estado { border-color: #7DD3FC; color: #7DD3FC; }
 .mol-sin_rasgo .mol-estado, .mol-datos_insuficientes .mol-estado { color: var(--texto_secundario); }
 .mol-datos_insuficientes { border-left-style: dashed; }
+.id-rejilla { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+#id-lienzo { width: 100%; height: auto; max-width: 600px; display: block; border-radius: var(--radio-sm); cursor: crosshair; touch-action: none; }
+.id-deteccion { border-top: 1px solid var(--borde-suave); margin-top: .5rem; padding-top: .4rem; font-size: .84rem; }
+.id-deteccion h4 { margin: 0 0 .2rem; font-size: .84rem; }
+#id-resultados .tabla-scroll { overflow-x: auto; }
 .insignia { display: block; width: max-content; margin: 0 0 .2rem; white-space: nowrap; }
 .cat-lista th, .cat-lista td { padding: .45rem .6rem; vertical-align: top; }
 .cat-ficha { background: var(--fondo-alt); border: 1px solid var(--borde-suave); border-radius: var(--radio-sm); padding: .8rem; }
@@ -365,7 +370,7 @@ header.barra .vistas button { font-size: .82rem; padding: .3rem .7rem; }
   header.barra { padding: .6rem .75rem; }
   header.barra .campo-selector { margin-left: 0; width: 100%; }
   .analisis { padding: .75rem; }
-  .cat-rejilla, .cat-columnas { grid-template-columns: 1fr; }
+  .cat-rejilla, .cat-columnas, .id-rejilla { grid-template-columns: 1fr; }
   .cmp-grafico-caja { height: 300px; }
   thead th, tbody td { padding: .45rem .6rem; }
   .pista-desliza { display: block; }

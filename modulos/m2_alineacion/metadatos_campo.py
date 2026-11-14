@@ -9,6 +9,7 @@
 #   1. Leer fechas MJD, detector, tamaño de las cabeceras  ->  datos de las épocas
 #   2. Leer nombre, centro de seleccion.json  ->  identidad del campo
 #   3. Calcular las horas entre A, B  ->  meta.json
+#   4. Publicar el WCS (TAN, base 0) y el origen real si los FITS vienen de IRSA  ->  wcs, origen
 # VERIFICACION: El archivo valida contra contratos/meta.schema.json; horas_entre_a_b coincide con la resta de las dos fechas MJD.
 # USO: python -m modulos.m2_alineacion.metadatos_campo <campo>
 # ============================================================================
@@ -34,6 +35,27 @@ def leer_cabeceras(ruta_fits):
     """(cabecera primaria, cabecera de IMAGE, forma de IMAGE) de un FITS alineado."""
     with fits.open(ruta_fits) as h:
         return h[0].header.copy(), h["IMAGE"].header.copy(), h["IMAGE"].data.shape
+
+
+def wcs_publicable(cabecera_imagen):
+    """WCS de la rejilla alineada en la forma del contrato (TAN, píxeles base 0); None si no es TAN.
+
+    La web lo usa para convertir un clic en RA/DEC; si no hay WCS utilizable, la web no inventa coordenadas.
+    """
+    w = WCS(cabecera_imagen).celestial
+    if not (w.wcs.ctype[0].endswith("-TAN") and w.wcs.ctype[1].endswith("-TAN")):
+        return None
+    cd = w.pixel_scale_matrix  # grados por píxel, incluye CDELT y PC
+    return {"proyeccion": "TAN",
+            "crval_ra_grados": float(w.wcs.crval[0]) % 360.0, "crval_dec_grados": float(w.wcs.crval[1]),
+            "crpix_x": float(w.wcs.crpix[0]) - 1.0, "crpix_y": float(w.wcs.crpix[1]) - 1.0,
+            "cd": [[float(cd[0, 0]), float(cd[0, 1])], [float(cd[1, 0]), float(cd[1, 1])]]}
+
+
+def origen_de(seleccion):
+    """real si todas las exposiciones se descargaron de IRSA; None (no declarado) en otro caso."""
+    urls = [e.get("url_acceso", "") for e in seleccion.get("exposiciones", [])]
+    return "real" if urls and all("irsa.ipac.caltech.edu" in u for u in urls) else None
 
 
 def construir_meta(seleccion, cabeceras):
@@ -62,7 +84,7 @@ def construir_meta(seleccion, cabeceras):
     horas = (mjd["epoca_b"] - mjd["epoca_a"]) * 24.0
     if horas <= 0:
         raise ValueError("la época B (MJD %s) debe ser posterior a la época A (MJD %s)" % (mjd["epoca_b"], mjd["epoca_a"]))
-    return {
+    meta = {
         "_comentario": "Generado por m2_alineacion. Rejilla de la época A; x, y con origen en la esquina inferior izquierda.",
         "version_contrato": "1",
         "campo": seleccion["campo"],
@@ -75,6 +97,13 @@ def construir_meta(seleccion, cabeceras):
         "horas_entre_a_b": round(horas, 6),
         "imagenes": dict(IMAGENES),
     }
+    wcs = wcs_publicable(cabeceras["epoca_a"][1])
+    if wcs is not None:
+        meta["wcs"] = wcs
+    origen = origen_de(seleccion)
+    if origen is not None:
+        meta["origen"] = origen
+    return meta
 
 
 def escribir_meta(campo, raiz_datos="datos"):

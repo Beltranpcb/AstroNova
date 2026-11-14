@@ -93,3 +93,13 @@ Servir el repositorio desde la raíz y abrir
 - [ ] Cada molécula lleva su estado escrito (no solo color), S en sigmas, explicación y referencia.
 - [ ] Luhman 16 A (demo): CH4 «Detectada»; la roca oscura de Slipher: H2O «Candidata» con minerales hidratados como alternativa.
 - [ ] El resumen nunca cuenta una candidata como detección.
+
+## Análisis de objetos · Identificar
+
+- [ ] La imagen del campo aparece con las detecciones marcadas; la nota dice si es sintética.
+- [ ] Un clic muestra píxel, RA/DEC (grados y sexagesimal), época A en UTC y la incertidumbre del clic.
+- [ ] Un clic junto a una marca selecciona la detección y muestra su identificación de m5.
+- [ ] «Consultar efemérides» muestra «Consultando…» y después la tabla o «no identificado en los catálogos consultados».
+- [ ] Sin red aparece el error del servicio externo, sin romper la selección.
+- [ ] Un campo sin `wcs` en meta.json avisa y no muestra coordenadas.
+- [ ] Rueda o +/− acercan; arrastrar desplaza sin seleccionar.

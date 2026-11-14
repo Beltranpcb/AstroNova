@@ -173,11 +173,38 @@
 
     <section id="panel-identificar" class="panel analisis-panel" role="tabpanel" hidden>
       <h2>Identificar objeto</h2>
-      <p class="vacio pendiente">
-        <b>Pendiente.</b> Esta herramienta convertirá un clic sobre la imagen en coordenadas
-        celestes (necesita la solución WCS del campo) y consultará catálogos y efemérides con
-        la fecha de observación. Todavía no está conectada a ningún servicio.
+      <p class="aviso-conceptual">
+        Haz clic en una fuente: el píxel se convierte en RA/DEC con el WCS del campo y se consultan las
+        efemérides de cuerpos menores para la fecha de la observación. Ver una fuente no es identificarla,
+        y un objeto sin coincidencia no es un objeto nuevo ni el Planeta X.
       </p>
+      <div class="cmp-controles">
+        <label>Campo <select id="id-campo" aria-label="Campo"></select></label>
+        <div class="grupo" role="group" aria-label="Zoom">
+          <button id="id-zoom-mas" aria-label="Acercar">+</button>
+          <button id="id-zoom-menos" aria-label="Alejar">−</button>
+          <button id="id-zoom-reset">Restablecer</button>
+        </div>
+      </div>
+      <p class="cmp-aviso-wcs aviso-conceptual" id="id-sin-wcs" hidden>
+        Este campo no publica solución WCS: se puede elegir un píxel, pero no se calculan coordenadas celestes.
+      </p>
+      <div class="id-rejilla">
+        <div>
+          <canvas id="id-lienzo" width="600" height="600" aria-label="Imagen del campo: haz clic en una fuente"></canvas>
+          <p class="cmp-nota" id="id-imagen-nota"></p>
+        </div>
+        <div class="cat-ficha">
+          <h4 class="composicion-titulo">Fuente seleccionada</h4>
+          <div id="id-fuente"><p class="vacio">Haz clic en una fuente de la imagen o en una detección marcada.</p></div>
+          <div id="id-consulta" hidden>
+            <div class="cat-acciones"><button id="id-consultar" class="primario">Consultar efemérides (SkyBoT · IMCCE)</button></div>
+            <p class="cmp-nota">Estrellas y galaxias (Gaia DR3): pendiente. Los archivos de la ESA y del CDS no aceptan
+              consultas desde otra web (CORS); se precalcularán en m5.</p>
+          </div>
+          <div id="id-resultados" aria-live="polite"></div>
+        </div>
+      </div>
     </section>
 
     <section id="panel-comparar" class="panel analisis-panel" role="tabpanel" hidden>
@@ -233,6 +260,8 @@
 <script src="catalogo.js"></script>
 <script src="composicion_logica.js"></script>
 <script src="composicion.js"></script>
+<script src="identificar_logica.js"></script>
+<script src="identificar.js"></script>
 <script>
   const portada = document.getElementById("portada");
   const app = document.getElementById("app");
