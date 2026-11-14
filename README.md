@@ -89,7 +89,7 @@ Ejemplo que sirve de prueba de aceptación: un planeta de 25 000 km con albedo 0
 - Servicio SIA2 de IRSA (`https://irsa.ipac.caltech.edu/SIA`), colecciones `spherex_qr3`, `spherex_dr1`, `spherex_dr1_deep`: lista las exposiciones que cubren un punto del cielo.
 - Servicio de recortes de IRSA (parámetros `center`, `size`): se descargan recortes de unos 0,2 grados, nunca la imagen entera de 70 MB.
 
-**Qué épocas se comparan.** Un asteroide del cinturón principal se mueve unos 30 segundos de arco por hora (unos 5 píxeles). Con seis meses de separación ya no estaría en el campo. Por eso cada campo usa tres imágenes del mismo detector:
+**Qué épocas se comparan.** Un asteroide del cinturón principal se mueve entre 30 y 75 segundos de arco por hora (media docena de píxeles en un par de horas; unos 75 ″/h corresponden a 0,5°/día). Con seis meses de separación ya no estaría en el campo. Por eso cada campo usa tres imágenes del mismo detector:
 
 - **Época A** con **época B**: separadas horas o pocos días. Con ellas se mide el movimiento.
 - **Plantilla**: de la otra pasada, unos seis meses antes o después. Sirve para reconocer las estrellas fijas.

@@ -62,7 +62,7 @@ La verificación no ejecuta ningún otro módulo: usa datos sintéticos o los ej
 
 ## Nota
 
-Toda detección se trata como candidata a objeto móvil, nunca como asteroide confirmado. La velocidad máxima admisible inicial es de 60 segundos de arco por hora.
+Toda detección se trata como candidata a objeto móvil, nunca como asteroide confirmado. La velocidad admisible va de 0,05 a 150 segundos de arco por hora (un asteroide del cinturón principal recorre unos 75 ″/h). Además se exige señal/ruido de al menos 5 en las dos fuentes y que ninguna caiga a menos de 5 píxeles del borde del recorte.
 
 ## Estado
 
