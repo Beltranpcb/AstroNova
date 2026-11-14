@@ -1,5 +1,5 @@
 {
-  "_comentario": "Ejemplo escrito a mano. Valores inventados, sin valor científico. Contrato: contratos/catalogo.schema.json.",
+  "_comentario": "Ejemplo generado con m7_publicacion/indice_catalogo.py sobre campo_ejemplo. Valores inventados, sin valor científico. Contrato: contratos/catalogo.schema.json. p002 no aparece: es un artefacto descartado.",
   "version_contrato": "1",
   "objetos": [
     {
@@ -7,10 +7,10 @@
       "campo": "campo_ejemplo",
       "id_candidato": "p001",
       "nombre": "Asteroide de ejemplo",
-      "designacion": "0000",
+      "designacion": null,
       "estado_identificacion": "conocido",
-      "clasificacion": "asteroide",
-      "fuente_clasificacion": "jpl_sb_ident",
+      "clasificacion": "desconocida",
+      "fuente_clasificacion": null,
       "datos": {
         "imagen": true,
         "trayectoria": true,
@@ -18,27 +18,6 @@
       },
       "n_puntos_espectrales": 6,
       "tipo_espectral": "asteroide_rocoso",
-      "relacionados": {
-        "misma_clasificacion": [],
-        "espectros_similares": []
-      }
-    },
-    {
-      "id_objeto": "campo_ejemplo/p002",
-      "campo": "campo_ejemplo",
-      "id_candidato": "p002",
-      "nombre": "Sin identificar (campo_ejemplo/p002)",
-      "designacion": null,
-      "estado_identificacion": "artefacto_descartado",
-      "clasificacion": "desconocida",
-      "fuente_clasificacion": null,
-      "datos": {
-        "imagen": true,
-        "trayectoria": true,
-        "espectro": "ninguno"
-      },
-      "n_puntos_espectrales": 0,
-      "tipo_espectral": null,
       "relacionados": {
         "misma_clasificacion": [],
         "espectros_similares": []
