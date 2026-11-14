@@ -10,6 +10,174 @@
 #   2. Escalar cada plantilla por mínimos cuadrados  ->  chi cuadrado reducido por tipo
 #   3. Elegir el menor  ->  tipo_espectral.json
 #   Entrega a escritura_espectros.py: tipo_espectral.json.
-# VERIFICACION: Cada objeto recibe un chi cuadrado reducido por plantilla; el tipo es el del menor, o indeterminado si ninguno baja del umbral.
-# ESTADO: Esqueleto sin código. Este archivo solo documenta el trabajo pendiente.
+# VERIFICACION: Cada objeto recibe un chi cuadrado reducido por plantilla; el tipo es el del
+#   menor, o indeterminado si ninguno baja del umbral.
+# USO: python -m modulos.m6_huella_espectral.comparacion_plantillas <campo>
+# NOTA: La escala queda libre porque una plantilla normalizada no predice el brillo; solo se
+#   compara la forma. Un tipo se acepta si su chi cuadrado reducido baja de UMBRAL_CHI2, su
+#   escala es significativa y el flujo medido se separa del cero.
 # ============================================================================
+"""Compara el espectro medido con las cuatro plantillas y elige el tipo."""
+import json
+import sys
+from pathlib import Path
+
+import numpy as np
+
+RAIZ_MODULO = Path(__file__).resolve().parent
+RUTA_PLANTILLAS = RAIZ_MODULO / "plantillas.json"
+
+UMBRAL_CHI2 = 3.0
+SIGNIFICANCIA_MINIMA_ESCALA = 3.0
+SIGNIFICANCIA_MINIMA_DETECCION = 3.0
+LONGITUD_ONDA_MIN, LONGITUD_ONDA_MAX = 0.75, 5.0
+
+COMENTARIO = (
+    "Generado por m6_huella_espectral/comparacion_plantillas.py. El tipo es el de la "
+    "plantilla que mejor reproduce la forma del espectro medido, no un diagnóstico."
+)
+
+
+def leer_json(ruta):
+    """Lee un JSON en UTF-8 y lo devuelve como objeto de Python."""
+    with open(ruta, encoding="utf-8") as archivo:
+        return json.load(archivo)
+
+
+def escribir_json(ruta, contenido):
+    """Escribe un objeto de Python como JSON legible, sin escapar acentos."""
+    ruta.parent.mkdir(parents=True, exist_ok=True)
+    with open(ruta, "w", encoding="utf-8") as archivo:
+        json.dump(contenido, archivo, ensure_ascii=False, indent=2)
+        archivo.write("\n")
+    return ruta
+
+
+def cargar_plantillas(ruta=RUTA_PLANTILLAS):
+    """Devuelve las cuatro plantillas con su longitud de onda y su flujo como arrays."""
+    datos = leer_json(ruta)
+    plantillas = []
+    for plantilla in datos["plantillas"]:
+        onda = np.asarray(plantilla["longitud_onda_micras"], dtype=float)
+        flujo = np.asarray(plantilla["flujo_normalizado"], dtype=float)
+        if onda.size != flujo.size or onda.size < 2:
+            raise ValueError("la plantilla %r no trae una curva válida" % plantilla.get("tipo"))
+        if onda.min() > LONGITUD_ONDA_MIN or onda.max() < LONGITUD_ONDA_MAX:
+            raise ValueError(
+                "la plantilla %r no cubre de %g a %g micras"
+                % (plantilla["tipo"], LONGITUD_ONDA_MIN, LONGITUD_ONDA_MAX)
+            )
+        if np.any(np.diff(onda) <= 0) or np.any(flujo <= 0) or not np.all(np.isfinite(flujo)):
+            raise ValueError("la plantilla %r trae ondas desordenadas o flujo no positivo" % plantilla["tipo"])
+        plantillas.append(
+            {
+                "tipo": plantilla["tipo"],
+                "etiqueta_publica": plantilla.get("etiqueta_publica", plantilla["tipo"]),
+                "onda": onda,
+                "flujo": flujo,
+            }
+        )
+    return plantillas
+
+
+def _arrays(puntos):
+    """Ondas, flujos y errores de una lista de puntos del contrato, como arrays."""
+    onda = np.array([p["longitud_onda_micras"] for p in puntos], dtype=float)
+    flujo = np.array([p["flujo_mjy"] for p in puntos], dtype=float)
+    error = np.array([p["error_mjy"] for p in puntos], dtype=float)
+    if not (np.all(np.isfinite(onda)) and np.all(np.isfinite(flujo)) and np.all(error > 0)):
+        raise ValueError("punto con longitud de onda, flujo o error no válido")
+    return onda, flujo, error
+
+
+def significancia_deteccion(puntos):
+    """Cuántas sigmas se separa el flujo medio del cero: un espectro de ruido no la supera."""
+    if not puntos:
+        return 0.0
+    _, flujo, error = _arrays(puntos)
+    pesos = 1.0 / error ** 2
+    media = float(np.sum(pesos * flujo) / np.sum(pesos))
+    sigma_media = float(1.0 / np.sqrt(np.sum(pesos)))
+    return abs(media) / sigma_media if sigma_media > 0 else 0.0
+
+
+def ajustar_plantilla(puntos, plantilla):
+    """Ajuste por mínimos cuadrados de una plantilla a los puntos. None si no se solapan."""
+    onda, flujo, error = _arrays(puntos)
+    if onda.min() < plantilla["onda"].min() or onda.max() > plantilla["onda"].max():
+        return None
+    modelo = np.interp(onda, plantilla["onda"], plantilla["flujo"])
+    pesos = 1.0 / error ** 2
+    denominador = float(np.sum(pesos * modelo ** 2))
+    if denominador <= 0:
+        return None
+    escala = float(np.sum(pesos * modelo * flujo) / denominador)
+    error_escala = float(1.0 / np.sqrt(denominador))
+    chi2 = float(np.sum(((flujo - escala * modelo) / error) ** 2))
+    return {
+        "tipo": plantilla["tipo"],
+        "chi2_reducido": round(chi2 / max(1, len(puntos) - 1), 4),
+        "escala": escala,
+        "significancia_escala": escala / error_escala if error_escala > 0 else 0.0,
+    }
+
+
+def comparar(puntos, plantillas=None):
+    """Ajusta las cuatro plantillas y devuelve el tipo elegido con sus chi cuadrados."""
+    plantillas = cargar_plantillas() if plantillas is None else plantillas
+    if not puntos:
+        return {"tipo": "indeterminado", "ajustes": []}
+
+    ajustes = []
+    for plantilla in plantillas:
+        ajuste = ajustar_plantilla(puntos, plantilla)
+        if ajuste is not None:
+            ajustes.append(ajuste)
+
+    validos = [
+        ajuste
+        for ajuste in ajustes
+        if ajuste["chi2_reducido"] <= UMBRAL_CHI2
+        and ajuste["significancia_escala"] >= SIGNIFICANCIA_MINIMA_ESCALA
+    ]
+    tipo = "indeterminado"
+    if validos and significancia_deteccion(puntos) >= SIGNIFICANCIA_MINIMA_DETECCION:
+        tipo = min(validos, key=lambda ajuste: ajuste["chi2_reducido"])["tipo"]
+
+    return {
+        "tipo": tipo,
+        "ajustes": [
+            {"tipo": ajuste["tipo"], "chi2_reducido": ajuste["chi2_reducido"]}
+            for ajuste in ajustes
+        ],
+    }
+
+
+def clasificar_campo(campo, raiz_datos="datos"):
+    """Lee espectro_medido.json y escribe tipo_espectral.json con el tipo de cada pareja."""
+    directorio = Path(raiz_datos) / "m6_huella_espectral" / campo
+    medido = leer_json(directorio / "espectro_medido.json")
+    plantillas = cargar_plantillas()
+    espectros = []
+    for espectro in medido["espectros"]:
+        resultado = comparar(espectro["puntos"], plantillas)
+        espectros.append(
+            {
+                "id_pareja": espectro["id_pareja"],
+                "tipo": resultado["tipo"],
+                "ajustes_plantilla": resultado["ajustes"],
+            }
+        )
+    return escribir_json(
+        directorio / "tipo_espectral.json",
+        {"_comentario": COMENTARIO, "campo": campo, "espectros": espectros},
+    )
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        sys.exit("Uso: python -m modulos.m6_huella_espectral.comparacion_plantillas <campo>")
+    ruta_escrita = clasificar_campo(sys.argv[1])
+    for espectro in leer_json(ruta_escrita)["espectros"]:
+        print("%s: tipo %s" % (espectro["id_pareja"], espectro["tipo"]))
+    print(ruta_escrita)
