@@ -33,6 +33,7 @@
   <div class="acciones">
     <button class="primario" id="btn-explorar">Explorar</button>
     <button id="btn-jugar">Jugar</button>
+    <button id="btn-calculadora">Calculadora</button>
   </div>
   <div class="campos-portada" id="portada-campos"></div>
   <p class="pie">
@@ -66,6 +67,11 @@
         </div>
         <button id="btn-reproducir">Pausa</button>
         <button id="btn-reset">Centrar</button>
+      </div>
+
+      <div class="aviso-sintesis" id="aviso-sintesis" hidden>
+        Imágenes sintéticas: el pipeline todavía no ha generado
+        <code>epoca_a.png</code> / <code>epoca_b.png</code> para este campo.
       </div>
 
       <div class="visor-fechas">
@@ -135,6 +141,9 @@
   });
   document.getElementById("btn-jugar").addEventListener("click", () => {
     window.location.href = "juego/game.html";
+  });
+  document.getElementById("btn-calculadora").addEventListener("click", () => {
+    window.location.href = "../m8_calculadora/calculadora.html";
   });
 </script>
 </body>

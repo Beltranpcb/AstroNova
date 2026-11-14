@@ -183,6 +183,10 @@
       ? comoCanvas(imagenes.b)
       : sintetizar("b");
     fotogramaD = diferencia(fotogramaA, fotogramaB);
+
+    // Aviso visible cuando las imágenes no vienen del pipeline.
+    const aviso = document.getElementById("aviso-sintesis");
+    if (aviso) aviso.hidden = Boolean(imagenes.a && imagenes.b);
     HX.fotogramas = { a: fotogramaA, b: fotogramaB, d: fotogramaD };
   }
 

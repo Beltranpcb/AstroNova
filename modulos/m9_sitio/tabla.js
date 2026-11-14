@@ -59,8 +59,14 @@
     });
 
     if (!lista.length) {
+      // Un campo sin candidatas no es un filtro vacío: el pipeline no encontró
+      // parejas, casi siempre porque las épocas están demasiado separadas.
+      const sinNada = (HX.estado.candidatos || []).length === 0;
+      const mensaje = sinNada
+        ? "Este campo no tiene candidatas: el pipeline no encontró parejas entre las dos épocas."
+        : "Sin candidatos para este filtro.";
       cuerpo.innerHTML =
-        '<tr><td colspan="7" style="color:var(--texto_secundario)">Sin candidatos para este filtro.</td></tr>';
+        '<tr><td colspan="7" style="color:var(--texto_secundario)">' + mensaje + "</td></tr>";
       return;
     }
 

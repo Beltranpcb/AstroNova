@@ -150,6 +150,14 @@ main {
 .visor-controles .grupo { display: flex; gap: .3rem; }
 .visor-controles button { font-size: .8rem; padding: .35rem .65rem; }
 
+.aviso-sintesis {
+  padding: .45rem .9rem;
+  font-size: .74rem;
+  color: #e8c98f;
+  background: rgba(255, 179, 71, .08);
+  border-top: 1px solid var(--borde-suave);
+}
+
 .visor-fechas {
   padding: .5rem .9rem; border-top: 1px solid var(--borde-suave);
   font-family: var(--mono); font-size: .76rem; color: var(--texto_secundario);
