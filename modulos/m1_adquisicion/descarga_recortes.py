@@ -32,6 +32,10 @@ from modulos.m1_adquisicion.consulta_sia import DIR_DATOS
 # Extensiones que exige contratos/recortes_fits.md
 EXTENSIONES_OBLIGATORIAS = ("IMAGE", "FLAGS", "VARIANCE", "ZODI", "PSF", "WCS-WAVE")
 
+# Nombres admitidos por extensión. Los recortes reales de SPHEREx llaman `EPSF`
+# a la PSF; el contrato la nombra `PSF`. Se acepta cualquiera de las dos.
+ALIAS_EXTENSIONES = {"PSF": ("PSF", "EPSF")}
+
 # Servicio de recortes del IRSA: se le pasa la ruta relativa del FITS, no la URL.
 URL_CUTOUT = "https://irsa.ipac.caltech.edu/ibe/cutout"
 
@@ -103,7 +107,11 @@ def extensiones_que_faltan(ruta: Path) -> list[str]:
             presentes = {h.name.upper() for h in hdus}
     except (OSError, ValueError) as error:
         raise RecorteInvalido(f"{ruta.name} no es un FITS legible: {error}") from error
-    return [e for e in EXTENSIONES_OBLIGATORIAS if e not in presentes]
+    return [
+        exigida
+        for exigida in EXTENSIONES_OBLIGATORIAS
+        if not any(nombre in presentes for nombre in ALIAS_EXTENSIONES.get(exigida, (exigida,)))
+    ]
 
 
 def _nombre_seguro(nombre: str) -> str:

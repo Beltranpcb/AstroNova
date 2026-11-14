@@ -316,6 +316,18 @@ def prueba_un_fits_sin_las_seis_extensiones_se_rechaza(tmp_path):
     assert not any((tmp_path / "campo_sintetico" / "recortes").iterdir())  # no queda ningún archivo inválido
 
 
+def prueba_la_psf_puede_llamarse_epsf(tmp_path):
+    # Los recortes reales de SPHEREx traen EPSF; el contrato la nombra PSF.
+    _preparar_seleccion(tmp_path)
+
+    def obtener_falso(url):
+        return _fits_sintetico(("IMAGE", "FLAGS", "VARIANCE", "ZODI", "EPSF", "WCS-WAVE"))
+
+    rutas = descarga_recortes.descargar_campo("campo_sintetico", tmp_path, obtener=obtener_falso)
+    assert rutas, "con EPSF el recorte debe aceptarse"
+    assert descarga_recortes.extensiones_que_faltan(rutas[0]) == []
+
+
 def prueba_un_archivo_que_no_es_fits_se_rechaza(tmp_path):
     _preparar_seleccion(tmp_path)
     with pytest.raises(RuntimeError, match="no es un FITS"):
