@@ -10,7 +10,7 @@
 | Dato | Valor |
 |---|---|
 | Productor | El equipo, en la hora 0 |
-| Consumidores | `m8_calculadora/estilo.css`, `m9_sitio/estilo.css` |
+| Consumidores | `m9_sitio/estilo.css` |
 | Regla | Cada `estilo.css` copia estas variables. Ningún módulo enlaza la hoja de estilo de otro. |
 
 ## Variables obligatorias

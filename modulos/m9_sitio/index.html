@@ -32,7 +32,6 @@
   </p>
   <div class="acciones">
     <button class="primario" id="btn-explorar">Explorar</button>
-    <button id="btn-calculadora">Calculadora</button>
   </div>
   <div class="campos-portada" id="portada-campos"></div>
   <p class="pie">
@@ -176,9 +175,7 @@
       : (window.location.hash === "#app" ? "app" : "portada");
     if (vista === "app") mostrarApp(false); else mostrarPortada(false);
   });
-  document.getElementById("btn-calculadora").addEventListener("click", () => {
-    window.location.href = "../m8_calculadora/calculadora.html";
-  });
+
 </script>
 </body>
 </html>

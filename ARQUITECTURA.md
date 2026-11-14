@@ -35,7 +35,7 @@ HUELLA X es una web pública que muestra qué se mueve entre dos observaciones d
 
 ## 2. Nivel 1: proyecto global
 
-Nueve módulos. Cada flecha lleva el nombre del dato que circula.
+Ocho módulos. Cada flecha lleva el nombre del dato que circula.
 
 ```mermaid
 flowchart TD
@@ -51,7 +51,6 @@ flowchart TD
     m7_publicacion["m7_publicacion<br/>Lote A"]
   end
   subgraph WEB["Web estática: sin backend"]
-    m8_calculadora["m8_calculadora<br/>Lote C"]
     m9_sitio["m9_sitio<br/>Lote D"]
   end
   VIS(["Visitante"])
@@ -71,9 +70,7 @@ flowchart TD
   m5_identificacion -->|"identificacion.json"| m7_publicacion
   m6_huella_espectral -->|"espectros.json"| m7_publicacion
   m7_publicacion -->|"campos.json, candidatos.json, espectros.json, meta.json, tres PNG"| m9_sitio
-  m8_calculadora -->|"URL de calculadora.html"| m9_sitio
   m9_sitio -->|"web pública"| VIS
-  m8_calculadora -->|"página de la calculadora"| VIS
 ```
 
 ### Módulos
@@ -87,7 +84,6 @@ flowchart TD
 | `m5_identificacion` | B | Decir si cada pareja en movimiento corresponde a un objeto ya catalogado. | datos/m5_identificacion/&lt;campo&gt;/identificacion.json (contrato identificacion)<br>datos/m5_identificacion/cache/ (respuestas guardadas; van a git) |
 | `m6_huella_espectral` | C | Construir el espectro infrarrojo de cada objeto en movimiento para estimar su naturaleza. | datos/m6_huella_espectral/&lt;campo&gt;/espectros.json (contrato espectros) |
 | `m7_publicacion` | A | Dejar en un único directorio los datos que la web lee. | datos/m7_publicacion/campos.json (contrato campos)<br>datos/m7_publicacion/&lt;campo&gt;/candidatos.json (contrato candidatos)<br>datos/m7_publicacion/&lt;campo&gt;/meta.json, espectros.json, epoca_a.png, epoca_b.png, diferencia.png (copias) |
-| `m8_calculadora` | C | Mostrar si SPHEREx podría detectar un planeta hipotético elegido por el visitante. | La página modulos/m8_calculadora/calculadora.html, enlazada desde m9_sitio |
 | `m9_sitio` | D | Mostrar al público qué se mueve en cada campo, con la naturaleza de cada objeto. | La web pública servida desde modulos/m9_sitio/index.html |
 
 ### Verificación de cada módulo en aislamiento
@@ -101,8 +97,7 @@ flowchart TD
 | `m5_identificacion` | `python -m pytest modulos/m5_identificacion/pruebas -q` | 1. Con una caché sintética, un objeto predicho a 5 segundos de arco da estado conocido.<br>2. Un objeto predicho a 30 segundos de arco da estado sin_identificar.<br>3. Una pareja no_concluyente sin coincidencia da estado artefacto_descartado.<br>4. La prueba termina sin abrir ninguna conexión de red.<br>5. El identificacion.json generado valida contra contratos/identificacion.schema.json. |
 | `m6_huella_espectral` | `python -m pytest modulos/m6_huella_espectral/pruebas -q` | 1. Un cuerpo negro sintético de 300 K se recupera con una temperatura entre 270 y 330 K.<br>2. Un espectro sintético con un pico de emisión en 4,26 micras recibe el tipo cometa.<br>3. Un espectro de ruido puro recibe el tipo indeterminado.<br>4. El espectros.json generado valida contra contratos/espectros.schema.json. |
 | `m7_publicacion` | `python -m pytest modulos/m7_publicacion/pruebas -q` | 1. El candidatos.json generado desde los ejemplos coincide valor a valor con contratos/ejemplos/campo_ejemplo/candidatos.json.<br>2. El campos.json generado desde los ejemplos coincide con contratos/ejemplos/campos.json.<br>3. Un JSON de entrada que incumple su esquema hace que control_publicacion termine con código distinto de cero.<br>4. Un archivo de 2 MB en el directorio publicado hace que control_publicacion termine con código distinto de cero. |
-| `m8_calculadora` | `node --test modulos/m8_calculadora/pruebas/prueba_calculadora.js` | 1. Con diámetro 25 000 km, albedo 0,4, distancia 500 UA, la magnitud aparente vale 21,6 con un margen de 0,1.<br>2. Con esos mismos datos la temperatura vale 12,4 K con un margen de 0,1 K.<br>3. Con esos mismos datos el máximo de emisión cae en 233 micras con un margen de 5 micras.<br>4. Con esos mismos datos el veredicto es no detectable. |
-| `m9_sitio` | `node --test modulos/m9_sitio/pruebas/prueba_sitio.js` | 1. La lectura de contratos/ejemplos devuelve un campo con dos candidatos.<br>2. Un archivo con version_contrato distinta de 1 produce un error con el nombre del archivo.<br>3. Seleccionar un candidato avisa a todas las vistas suscritas una sola vez.<br>4. Las ocho comprobaciones de pruebas/lista_visual.md quedan marcadas tras revisarlas en navegador. |
+| `m9_sitio` | `node --test modulos/m9_sitio/pruebas/prueba_sitio.js` | 1. La lectura de contratos/ejemplos devuelve un campo con dos candidatos.<br>2. Un archivo con version_contrato distinta de 1 produce un error con el nombre del archivo.<br>3. Seleccionar un candidato avisa a todas las vistas suscritas una sola vez.<br>4. Las comprobaciones de pruebas/lista_visual.md quedan marcadas tras revisarlas en navegador. |
 
 ### Prueba de que el grafo es acíclico
 
@@ -119,12 +114,13 @@ flowchart TD
 | `m5_identificacion` | 5 | m3 (3), m4 (4) | 4 |
 | `m6_huella_espectral` | 6 | m1 (1), m3 (3), m4 (4) | 4 |
 | `m7_publicacion` | 7 | m2 (2), m3 (3), m4 (4), m5 (5), m6 (6) | 5 |
-| `m8_calculadora` | 8 | ninguno | 0 |
-| `m9_sitio` | 9 | m7 (7), m8 (8) | 6 |
+| `m9_sitio` | 9 | m7 (7) | 6 |
 
 En todas las filas, cada número de la tercera columna es estrictamente menor que el de la segunda. Toda arista del grafo va, por tanto, de un número menor a uno mayor. Un ciclo tendría que volver a su punto de partida, lo que exige al menos una arista de un número mayor a uno menor. No existe ninguna. Luego no hay ciclos, y el orden m1, m2, …, m9 es un orden topológico válido. ∎
 
-**Capas** (un módulo solo depende de capas anteriores): {m1, m8} → {m2} → {m3} → {m4} → {m5, m6} → {m7} → {m9}.
+La numeración salta el 8: `m8_calculadora` se retiró y no se renumeró `m9_sitio` para no romper rutas ni ramas.
+
+**Capas** (un módulo solo depende de capas anteriores): {m1} → {m2} → {m3} → {m4} → {m5, m6} → {m7} → {m9}.
 
 **Dentro de cada módulo** ocurre lo mismo con los archivos: en los diagramas de nivel 2, ninguna cadena de flechas entre archivos del mismo módulo vuelve a su origen (comprobado con un orden topológico al generar esta documentación).
 
@@ -136,7 +132,7 @@ En todas las filas, cada número de la tercera columna es estrictamente menor qu
 |---|---|---|---|
 | **Lote A** | Datos: entrada del pipeline, alineación, publicación | `m1_adquisicion` (6 h)<br>`m2_alineacion` (6 h)<br>`m7_publicacion` (4 h) | 16 h |
 | **Lote B** | Detección con validación en catálogos | `m3_deteccion` (12 h)<br>`m5_identificacion` (6 h) | 18 h |
-| **Lote C** | Física: movimiento, espectro, calculadora | `m4_movimiento` (4 h)<br>`m6_huella_espectral` (10 h)<br>`m8_calculadora` (3 h) | 17 h |
+| **Lote C** | Física: movimiento y espectro | `m4_movimiento` (4 h)<br>`m6_huella_espectral` (10 h) | 14 h |
 | **Lote D** | Web pública | `m9_sitio` (18 h) | 18 h |
 
 Las horas son estimaciones para repartir la carga, no un compromiso. Ningún lote necesita el código de otro: solo sus datos, de los que existe un ejemplo desde la hora 0.
@@ -158,7 +154,7 @@ Toda flecha entre dos módulos del nivel 1 está respaldada por un contrato de `
 | `contratos/espectros.schema.json` | espectros.json | m6 | m7, m9 |
 | `contratos/candidatos.schema.json` | candidatos.json | m7 | m9 |
 | `contratos/campos.schema.json` | campos.json | m7 | m9 |
-| `contratos/guia_visual.md` | variables de estilo | equipo | m8, m9 |
+| `contratos/guia_visual.md` | variables de estilo | equipo | m9 |
 
 Los contratos JSON son esquemas (JSON Schema 2020-12) que una herramienta estándar comprueba. Los contratos de FITS, de PNG, de estilo son documentos Markdown con su propia regla de verificación. Las convenciones comunes (unidades, identificadores, origen de píxeles) están en `contratos/LEEME.md`.
 
@@ -428,45 +424,6 @@ flowchart LR
 
 </details>
 
-<details>
-<summary><strong>m8_calculadora</strong> — Lote C — Mostrar si SPHEREx podría detectar un planeta hipotético elegido por el visitante.</summary>
-
-```mermaid
-flowchart LR
-  subgraph MODULO["m8_calculadora"]
-    f0["LEEME.md"]
-    f1["calculadora.html"]
-    f2["estilo.css"]
-    f3["fisica_planeta.js"]
-    f4["sensibilidad_spherex.json"]
-    f5["veredicto.js"]
-    f6["interfaz.js"]
-    f7["pruebas/prueba_calculadora.js"]
-  end
-  e0(["visitante"])
-  e1(["m9_sitio"])
-  f2 -->|"reglas de estilo"| f1
-  f1 -->|"valores de los deslizadores"| f6
-  f6 -->|"distancia, diámetro, albedo"| f3
-  f3 -->|"magnitud, máximo de emisión"| f5
-  f4 -->|"límite por detector"| f5
-  f5 -->|"veredicto con motivo"| e0
-  f1 -->|"URL de calculadora.html"| e1
-  f7 -->|"ejemplo numérico"| f3
-```
-
-| Archivo | Responsabilidad única |
-|---|---|
-| `LEEME.md` | Describe el módulo junto a su comando de verificación. |
-| `calculadora.html` | Define la página con los tres deslizadores del planeta hipotético. |
-| `estilo.css` | Aplica la guía visual a la página de la calculadora. |
-| `fisica_planeta.js` | Evalúa las fórmulas de brillo del planeta hipotético. |
-| `sensibilidad_spherex.json` | Contiene el límite de detección de SPHEREx por detector. |
-| `veredicto.js` | Decide si el planeta calculado supera el límite de SPHEREx. |
-| `interfaz.js` | Refleja en pantalla el resultado de cada movimiento de deslizador. |
-| `pruebas/prueba_calculadora.js` | Comprueba las fórmulas con el ejemplo numérico de la propuesta. |
-
-</details>
 
 <details>
 <summary><strong>m9_sitio</strong> — Lote D — Mostrar al público qué se mueve en cada campo, con la naturaleza de cada objeto.</summary>
@@ -489,12 +446,10 @@ flowchart LR
     f12["pruebas/lista_visual.md"]
   end
   e0(["m7_publicacion"])
-  e1(["m8_calculadora"])
   e2(["visitante"])
   f2 -->|"reglas de estilo"| f1
   e0 -->|"campos.json, meta.json, candidatos.json, espectros.json"| f4
   e0 -->|"epoca_a.png, epoca_b.png, diferencia.png"| f6
-  e1 -->|"URL de calculadora.html"| f1
   f3 -->|"campo elegido"| f4
   f4 -->|"lista de campos"| f5
   f4 -->|"meta del campo"| f6
@@ -1060,77 +1015,6 @@ flowchart TB
 
 </details>
 
-<details>
-<summary><strong>m8_calculadora</strong> — funcionamiento previsto de cada archivo</summary>
-
-```mermaid
-flowchart TB
-  subgraph g1["fisica_planeta.js"]
-    direction LR
-    g1o(["interfaz.js"])
-    g1p1["Calcular la magnitud absoluta H = 5 log10(1329 / (D raíz de p))"]
-    g1o -->|"distancia, diámetro, albedo"| g1p1
-    g1p2["Calcular la magnitud aparente m = H + 5 log10(r delta)"]
-    g1p1 -->|"H"| g1p2
-    g1p3["Calcular T = 278 / raíz de r, con el pico de Wien 2898 / T"]
-    g1p2 -->|"m"| g1p3
-    g1d(["veredicto.js, interfaz.js"])
-    g1p3 -->|"magnitud, temperatura, máximo de emisión"| g1d
-  end
-  subgraph g2["veredicto.js"]
-    direction LR
-    g2o(["fisica_planeta.js"])
-    g2p1["Leer sensibilidad_spherex.json"]
-    g2o -->|"magnitud, máximo de emisión"| g2p1
-    g2p2["Comparar el brillo con cada límite"]
-    g2p1 -->|"límite por detector"| g2p2
-    g2p3["Redactar el motivo"]
-    g2p2 -->|"detectores que lo verían"| g2p3
-    g2d(["interfaz.js"])
-    g2p3 -->|"veredicto con motivo"| g2d
-  end
-  subgraph g3["interfaz.js"]
-    direction LR
-    g3o(["calculadora.html"])
-    g3p1["Pedir el cálculo a fisica_planeta.js"]
-    g3o -->|"valores de los tres deslizadores"| g3p1
-    g3p2["Pedir el veredicto a veredicto.js"]
-    g3p1 -->|"magnitud, temperatura, máximo"| g3p2
-    g3p3["Escribir cifras con mensaje"]
-    g3p2 -->|"veredicto con motivo"| g3p3
-    g3d(["visitante"])
-    g3p3 -->|"pantalla actualizada"| g3d
-  end
-  subgraph g4["pruebas/prueba_calculadora.js"]
-    direction LR
-    g4o(["prueba"])
-    g4p1["Ejecutar fisica_planeta.js, veredicto.js"]
-    g4o -->|"25 000 km, albedo 0,4, 500 UA"| g4p1
-    g4p2["Comparar con 21,6, con 12,4 K, con 233 micras"]
-    g4p1 -->|"magnitud, temperatura, máximo, veredicto"| g4p2
-    g4d(["node --test"])
-    g4p2 -->|"veredicto de la prueba"| g4d
-  end
-  subgraph gs["Archivos sin lógica"]
-    s0["LEEME.md<br/>ficha del módulo, sin lógica"]
-    s1["calculadora.html<br/>estructura sin lógica"]
-    s2["estilo.css<br/>estilo sin lógica"]
-    s3["sensibilidad_spherex.json<br/>datos sin lógica"]
-  end
-```
-
-| Archivo | Rol | Lee | Produce | Cómo se verifica |
-|---|---|---|---|---|
-| `LEEME.md` | Describe el módulo junto a su comando de verificación. | Nada. | La ficha del módulo. | Cada archivo citado existe en el directorio. |
-| `calculadora.html` | Define la página con los tres deslizadores del planeta hipotético. | estilo.css; interfaz.js. | La estructura que el navegador muestra: tres deslizadores, tres cifras, un mensaje de veredicto. | La página abre sin errores de consola; contiene los deslizadores de distancia, diámetro, albedo. |
-| `estilo.css` | Aplica la guía visual a la página de la calculadora. | Los valores de contratos/guia_visual.md, copiados a mano. | Las reglas de estilo que usa calculadora.html. | Las seis variables de color tienen los valores exactos de contratos/guia_visual.md. |
-| `fisica_planeta.js` | Evalúa las fórmulas de brillo del planeta hipotético. | Distancia en UA, diámetro en km, albedo, entregados por interfaz.js. | Magnitud aparente, temperatura de equilibrio, longitud de onda del máximo. | Reproduce el ejemplo numérico de la propuesta dentro de los márgenes del criterio de aceptación. |
-| `sensibilidad_spherex.json` | Contiene el límite de detección de SPHEREx por detector. | Nada: se rellena a mano desde la documentación de IRSA. | Los seis límites (uno por detector) que lee veredicto.js. | Hay seis entradas, una por detector, con su intervalo de longitud de onda. |
-| `veredicto.js` | Decide si el planeta calculado supera el límite de SPHEREx. | El resultado de fisica_planeta.js; sensibilidad_spherex.json. | Un veredicto (detectable o no detectable) con su motivo en texto. | Un planeta más débil que el límite de todos los detectores da no detectable. |
-| `interfaz.js` | Refleja en pantalla el resultado de cada movimiento de deslizador. | Los tres deslizadores de calculadora.html; fisica_planeta.js; veredicto.js. | Las cifras con el mensaje actualizados en la página. | Al mover un deslizador cambian las tres cifras sin recargar la página. |
-| `pruebas/prueba_calculadora.js` | Comprueba las fórmulas con el ejemplo numérico de la propuesta. | Los valores 25 000 km, 0,4, 500 UA escritos en la propia prueba. | El veredicto de node --test. | Es el propio verificador: pasa cuando se cumplen los criterios de aceptación del módulo. |
-
-</details>
 
 <details>
 <summary><strong>m9_sitio</strong> — funcionamiento previsto de cada archivo</summary>
@@ -1252,7 +1136,7 @@ flowchart TB
 | Archivo | Rol | Lee | Produce | Cómo se verifica |
 |---|---|---|---|---|
 | `LEEME.md` | Describe el módulo junto a su comando de verificación. | Nada. | La ficha del módulo. | Cada archivo citado existe en el directorio. |
-| `index.html` | Define la portada con los contenedores de cada vista. | estilo.css; los ocho archivos .js de trabajo del módulo; Aladin Lite v3 con Chart.js por CDN. | La estructura que el navegador muestra: selector de campo, visor, tabla, ficha, espectro, enlace a la calculadora. | La página abre sin errores de consola; el enlace a la calculadora apunta a ../m8_calculadora/calculadora.html. |
+| `index.html` | Define la portada con los contenedores de cada vista. | estilo.css; los ocho archivos .js de trabajo del módulo; Aladin Lite v3 con Chart.js por CDN. | La estructura que el navegador muestra: selector de campo, visor, tabla, ficha y espectro. | La página abre sin errores de consola y muestra el explorador con los datos de un campo. |
 | `estilo.css` | Aplica la guía visual con diseño adaptable a móvil. | Los valores de contratos/guia_visual.md, copiados a mano. | Las reglas de estilo que usa index.html. | Las seis variables de color tienen los valores exactos de la guía; por debajo de 700 px de ancho el visor queda encima de la tabla. |
 | `estado_seleccion.js` | Mantiene la selección actual de campo con su candidato. | Los clics que le comunican selector_campo.js, visor.js, tabla.js. | Un aviso de cambio para cada vista suscrita. | Cada cambio de selección avisa una sola vez a cada vista suscrita. |
 | `carga_datos.js` | Lee los archivos publicados de un campo. | campos.json, meta.json, candidatos.json, espectros.json de datos/m7_publicacion/ (o de contratos/ejemplos/ en modo prueba). | Los datos del campo en memoria para las vistas. | Con contratos/ejemplos devuelve dos candidatos; con otra version_contrato falla nombrando el archivo. |
@@ -1383,16 +1267,6 @@ AstroNova/
 │   │   ├── copia_publicable.py             Copia al directorio publicado los archivos que la web lee sin cambios.
 │   │   ├── indice_campos.py                Escribe campos.json con la lista de campos publicados.
 │   │   └── union_candidatos.py             Une los resultados de cada pareja en candidatos.json.
-│   ├── m8_calculadora/
-│   │   ├── pruebas/
-│   │   │   └── prueba_calculadora.js       Comprueba las fórmulas con el ejemplo numérico de la propuesta.
-│   │   ├── LEEME.md                        Describe el módulo junto a su comando de verificación.
-│   │   ├── calculadora.html                Define la página con los tres deslizadores del planeta hipotético.
-│   │   ├── estilo.css                      Aplica la guía visual a la página de la calculadora.
-│   │   ├── fisica_planeta.js               Evalúa las fórmulas de brillo del planeta hipotético.
-│   │   ├── interfaz.js                     Refleja en pantalla el resultado de cada movimiento de deslizador.
-│   │   ├── sensibilidad_spherex.json       Contiene el límite de detección de SPHEREx por detector.
-│   │   └── veredicto.js                    Decide si el planeta calculado supera el límite de SPHEREx.
 │   └── m9_sitio/
 │       ├── pruebas/
 │       │   ├── lista_visual.md             Enumera las comprobaciones manuales de la web en navegador.
@@ -1423,7 +1297,7 @@ Los módulos se ejecutan en el orden de su número, campo a campo. Dentro de cad
 m1_adquisicion → m2_alineacion → m3_deteccion → m4_movimiento → m5_identificacion → m6_huella_espectral → m7_publicacion
 ```
 
-`m5_identificacion` y `m6_huella_espectral` no dependen entre sí: pueden ejecutarse a la vez. `m8_calculadora` y `m9_sitio` no se ejecutan en el pipeline: son páginas estáticas.
+`m5_identificacion` y `m6_huella_espectral` no dependen entre sí: pueden ejecutarse a la vez. `m9_sitio` no se ejecuta en el pipeline: es una página estática.
 
 ## 9. Prototipo eliminado
 
@@ -1449,7 +1323,7 @@ También se retiraron de `requirements.txt` las dependencias `fastapi`, `uvicorn
 
 ## 10. Fuera de alcance
 
-- **Minijuego** de encontrar el objeto: figuraba en la propuesta como extra y llegó a implementarse dentro de `m9_sitio`. **Se retiró**: la web queda en tres pantallas (portada, explorador y calculadora) y el juego no tenía contrato ni salida propios.
+- **Minijuego** de encontrar el objeto: figuraba en la propuesta como extra y llegó a implementarse dentro de `m9_sitio`. **Se retiró**: la web queda en dos pantallas (portada y explorador) y el juego no tenía contrato ni salida propios.
 - **Modo ciudadano** («¿Es real?»): opcional en la propuesta. Exige guardar votos, es decir, un backend. Incompatible con el sitio estático.
 - **Textos en inglés**, **descarga de la tabla en CSV**, **botón de compartir**.
 - **Orquestador único** del pipeline: se evita a propósito. Un archivo que lanzara todos los módulos tendría que conocerlos a todos. El orden de ejecución está escrito en `ARQUITECTURA.md`.

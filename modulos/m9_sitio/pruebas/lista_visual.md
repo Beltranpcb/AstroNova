@@ -14,7 +14,7 @@ Servir el repositorio desde la raíz y abrir
 ## Portada
 
 - [ ] Se lee el título **HUELLA X** con degradado.
-- [ ] Hay dos botones: **Explorar** y **Calculadora**.
+- [ ] Hay un botón: **Explorar**.
 - [ ] Aparecen los botones de los campos publicados.
 - [ ] Pulsar un campo abre la aplicación en ese campo.
 
