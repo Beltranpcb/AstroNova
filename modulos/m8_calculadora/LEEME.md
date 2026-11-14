@@ -59,4 +59,9 @@ Página autónoma: abre sin ningún dato del pipeline. Los valores de sensibilid
 
 ## Estado
 
-Esqueleto sin código: el comando de verificación falla hasta que el lote implemente el módulo.
+Implementado. La página funciona sola y la verificación pasa con
+`node --test modulos/m8_calculadora/pruebas/prueba_calculadora.js`.
+
+Los límites de `sensibilidad_spherex.json` son 5σ para fuente puntual del sondeo
+de todo el cielo (19,5–19,9 AB entre 0,75 y 3,8 µm; 17,8–18,8 AB entre 3,8 y
+5,0 µm), tomados de la bibliografía de la misión y de la documentación de IRSA.
