@@ -125,23 +125,15 @@ def _nombre_seguro(nombre: str) -> str:
     return nombre
 
 
-def descargar_campo(campo: str, dir_datos: Path = DIR_DATOS, obtener=obtener_bytes,
-                    forzar: bool = False) -> list[Path]:
-    """Descarga y valida un recorte por exposición de seleccion.json. Devuelve las rutas de los FITS.
+INTENTOS_DE_TRIO = 3
 
-    Un recorte que falla no detiene a los demás: al final se lanza un único error que los lista.
-    """
-    ruta_seleccion = dir_datos / campo / "seleccion.json"
-    with open(ruta_seleccion, encoding="utf-8") as f:
-        seleccion = json.load(f)
+
+def _descargar_exposiciones(seleccion, carpeta, obtener, forzar):
+    """Descarga las exposiciones de `seleccion`. Devuelve (listos, fallos, ids_fallidos)."""
     ra, dec = seleccion["centro"]["ra_grados"], seleccion["centro"]["dec_grados"]
     radio = seleccion["radio_grados"]
+    listos, fallos, fallidas = [], [], set()
 
-    carpeta = dir_datos / campo / "recortes"
-    carpeta.mkdir(parents=True, exist_ok=True)
-
-    listos: list[Path] = []
-    fallos: list[str] = []
     for exposicion in seleccion["exposiciones"]:
         destino = carpeta / _nombre_seguro(exposicion["archivo_recorte"])
         if destino.exists() and not forzar:
@@ -183,10 +175,67 @@ def descargar_campo(campo: str, dir_datos: Path = DIR_DATOS, obtener=obtener_byt
         except (RecorteInvalido, RuntimeError, OSError) as error:
             parcial.unlink(missing_ok=True)
             fallos.append(f"{exposicion['id_exposicion']}: {error}")
+            fallidas.add(exposicion["id_exposicion"])
+    return listos, fallos, fallidas
 
-    if fallos:
-        raise RuntimeError(f"{len(fallos)} de {len(seleccion['exposiciones'])} recortes fallaron:\n  " + "\n  ".join(fallos))
-    return listos
+
+def _reseleccionar_sin(campo, dir_datos, fallidas):
+    """Vuelve a elegir trío descartando las exposiciones que no se pudieron descargar.
+
+    Hay archivos de DR1 que el servicio de recortes no sabe cortar (503 en todos
+    los intentos). En vez de dar el campo por perdido se prueba la siguiente
+    pareja A-B disponible.
+    """
+    from modulos.m1_adquisicion import seleccion_epocas
+
+    ruta_listado = dir_datos / campo / "listado_exposiciones.json"
+    if not ruta_listado.is_file():
+        return None
+    listado = json.loads(ruta_listado.read_text(encoding="utf-8"))
+    restantes = [e for e in listado["exposiciones"] if e["identificador"] not in fallidas]
+    if len(restantes) == len(listado["exposiciones"]):
+        return None
+    try:
+        nueva = seleccion_epocas.seleccionar({**listado, "exposiciones": restantes})
+    except seleccion_epocas.SeleccionImposible:
+        return None
+    seleccion_epocas.escribir_seleccion(nueva, dir_datos)
+    return nueva
+
+
+def descargar_campo(campo: str, dir_datos: Path = DIR_DATOS, obtener=obtener_bytes,
+                    forzar: bool = False) -> list[Path]:
+    """Descarga y valida un recorte por exposición de seleccion.json. Devuelve las rutas de los FITS.
+
+    Si una exposición no se puede descargar, se prueba otro trío descartándola
+    (hasta INTENTOS_DE_TRIO). Al final se lanza un único error con lo que falló.
+    """
+    ruta_seleccion = dir_datos / campo / "seleccion.json"
+    carpeta = dir_datos / campo / "recortes"
+    carpeta.mkdir(parents=True, exist_ok=True)
+
+    fallos: list[str] = []
+    for intento in range(1, INTENTOS_DE_TRIO + 1):
+        with open(ruta_seleccion, encoding="utf-8") as f:
+            seleccion = json.load(f)
+        listos, fallos, fallidas = _descargar_exposiciones(seleccion, carpeta, obtener, forzar)
+        if not fallos:
+            return listos
+        if intento == INTENTOS_DE_TRIO:
+            break
+        nueva = _reseleccionar_sin(campo, dir_datos, fallidas)
+        if nueva is None:
+            break
+        print(
+            "AVISO: %d recorte(s) no se pudieron descargar; se reintenta con otro trío."
+            % len(fallos),
+            file=sys.stderr,
+        )
+
+    raise RuntimeError(
+        f"{len(fallos)} recorte(s) fallaron en {campo} tras {INTENTOS_DE_TRIO} intentos:\n  "
+        + "\n  ".join(fallos)
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
