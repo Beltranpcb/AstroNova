@@ -1370,6 +1370,37 @@ Formas de servila, de la más simple a la más automática:
 
 La dirección de Pages, si se usa la opción 2, quedaría en `https://beltranpcb.github.io/AstroNova/modulos/m9_sitio/`.
 
+### Caché y refresco en el servidor
+
+Cuando la web viva en un servidor, los datos no se pueden pedir a IRSA en cada
+visita: el archivo se cae (pasó el 2026-11-14) y una consulta puede tardar
+minutos. El refresco lo gobierna `herramientas/actualizar_publicacion.py`:
+
+```bash
+python -m herramientas.actualizar_publicacion --estado          # qué hay y de cuándo
+python -m herramientas.actualizar_publicacion                   # refresca lo caducado
+python -m herramientas.actualizar_publicacion --ttl-dias 3      # otro intervalo
+python -m herramientas.actualizar_publicacion --forzar          # refresca todo
+```
+
+| Regla | Comportamiento |
+|---|---|
+| Antigüedad | un campo se refresca cuando supera `--ttl-dias` (7 por defecto) |
+| Fallo del refresco | **no se borra nada**: se conserva lo publicado y se apunta el error |
+| Refresco con menos datos | se conserva el anterior salvo `--aceptar-degradacion` |
+| Estado | `datos/m7_publicacion/_estado.json` (no entra en git) |
+
+La idea es la misma que en la demo: **lo último que funcionó se sigue sirviendo**.
+Si IRSA no responde, el servidor no se queda en blanco; como mucho muestra datos
+de hace unos días.
+
+Programarlo con cron o un temporizador del sistema:
+
+```cron
+# cada noche a las 3:15
+15 3 * * * cd /srv/astronova && /usr/bin/python3 -m herramientas.actualizar_publicacion >> /var/log/astronova.log 2>&1
+```
+
 ## 8. Límites y riesgos
 
 - **El campo 3 no encaja con el detector tal como está definido.** Una estrella de alto movimiento propio se mueve unos 10 segundos de arco *por año*. Entre dos épocas separadas horas no se desplaza; frente a la plantilla de seis meses se desplaza menos de un píxel. `m3_deteccion` la marcará como estacionaria. Además los catálogos de `m5_identificacion` solo contienen cuerpos menores, no estrellas. El equipo debe decidir en la hora 0: o se sustituye ese campo, o se muestra solo su espectro. Esta arquitectura no inventa un módulo para resolverlo.
