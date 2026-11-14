@@ -59,6 +59,7 @@ PASOS = [
     ("m6_huella_espectral", "fotometria", True),
     ("m6_huella_espectral", "comparacion_plantillas", True),
     ("m6_huella_espectral", "ajuste_planck", True),
+    ("m6_huella_espectral", "identificacion_molecular", True),
     ("m6_huella_espectral", "escritura_espectros", True),
     ("m7_publicacion", "union_candidatos", True),
     ("m7_publicacion", "copia_publicable", True),

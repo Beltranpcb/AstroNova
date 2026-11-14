@@ -2,7 +2,7 @@
 # ARCHIVO: modulos/m6_huella_espectral/escritura_espectros.py
 # MODULO: m6_huella_espectral (Lote C)
 # ROL: Reúne medida, tipo, temperatura en el archivo del contrato.
-# LEE: espectro_medido.json; tipo_espectral.json; temperatura.json.
+# LEE: espectro_medido.json; tipo_espectral.json; temperatura.json; composicion.json (opcional).
 # PRODUCE: datos/m6_huella_espectral/<campo>/espectros.json.
 # FUNCIONAMIENTO PREVISTO:
 #   Recibe de comparacion_plantillas.py, ajuste_planck.py: tipo_espectral.json, temperatura.json.
@@ -82,7 +82,7 @@ def publicar_plantillas(raiz_datos="datos"):
     return escribir_json(Path(raiz_datos) / "m6_huella_espectral" / "plantillas.json", contenido)
 
 
-def construir_espectros(campo, medido, tipos, temperaturas):
+def construir_espectros(campo, medido, tipos, temperaturas, composiciones=None):
     """Monta el espectros.json del contrato a partir de las tres tablas del campo."""
     for documento, nombre in (
         (medido, "espectro_medido.json"),
@@ -98,6 +98,8 @@ def construir_espectros(campo, medido, tipos, temperaturas):
     temperaturas_por_id = {
         espectro["id_pareja"]: espectro for espectro in temperaturas["espectros"]
     }
+
+    composicion_por_id = {e["id_pareja"]: e["composicion"] for e in (composiciones or {}).get("espectros", [])}
 
     espectros = []
     for medida in medido["espectros"]:
@@ -122,6 +124,7 @@ def construir_espectros(campo, medido, tipos, temperaturas):
                 "ajustes_plantilla": tipo["ajustes_plantilla"],
                 "advertencias": unir_advertencias(tipo.get("advertencias"), temperatura.get("advertencias")),
                 "calidad": calidad_de(medida["puntos"]),
+                **({"composicion": composicion_por_id[id_pareja]} if id_pareja in composicion_por_id else {}),
                 "temperatura_k": temperatura["temperatura_k"],
                 "incertidumbre_temperatura_k": temperatura["incertidumbre_temperatura_k"],
                 "pico_wien_micras": temperatura["pico_wien_micras"],
@@ -166,6 +169,7 @@ def escribir_campo(campo, raiz_datos="datos"):
         leer_json(directorio / "espectro_medido.json"),
         leer_json(directorio / "tipo_espectral.json"),
         leer_json(directorio / "temperatura.json"),
+        leer_json(directorio / "composicion.json") if (directorio / "composicion.json").is_file() else None,
     )
     publicar_plantillas(raiz_datos)
     return escribir_json(directorio / "espectros.json", contenido)
