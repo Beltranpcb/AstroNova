@@ -170,7 +170,7 @@ flowchart TD
 | `m6_huella_espectral` | C | Construir el espectro infrarrojo de cada objeto en movimiento para estimar su naturaleza. | datos/m6_huella_espectral/&lt;campo&gt;/espectros.json (contrato espectros) |
 | `m7_publicacion` | A | Dejar en un único directorio los datos que la web lee. | datos/m7_publicacion/campos.json (contrato campos)<br>datos/m7_publicacion/&lt;campo&gt;/candidatos.json (contrato candidatos)<br>datos/m7_publicacion/&lt;campo&gt;/meta.json, espectros.json, epoca_a.png, epoca_b.png, diferencia.png (copias) |
 | `m8_calculadora` | C | Mostrar si SPHEREx podría detectar un planeta hipotético elegido por el visitante. | La página modulos/m8_calculadora/calculadora.html, enlazada desde m9_sitio |
-| `m9_sitio` | D | Mostrar al público qué se mueve en cada campo, con la naturaleza de cada objeto. | La web pública servida desde modulos/m9_sitio/index.html |
+| `m9_sitio` | D | Mostrar al público qué se mueve en cada campo, con la naturaleza de cada objeto. | La web pública servida desde modulos/m9_sitio/index.html, con el minijuego en modulos/m9_sitio/juego/ |
 
 #### Prueba de que el grafo es acíclico
 
@@ -472,6 +472,9 @@ flowchart LR
     f10["espectro.js"]
     f11["pruebas/prueba_sitio.js"]
     f12["pruebas/lista_visual.md"]
+    f13["juego/game.html"]
+    f14["juego/game.js"]
+    f15["juego/game.css"]
   end
   e0(["m7_publicacion"])
   e1(["m8_calculadora"])
@@ -500,6 +503,9 @@ flowchart LR
   f8 -->|"filas visibles"| f1
   f9 -->|"ficha con mapa"| f1
   f10 -->|"gráfica rotulada"| f1
+  f1 -->|"botón Jugar"| f13
+  f13 -->|"rondas y puntuación"| f14
+  f13 -->|"estilos del juego"| f15
   f1 -->|"página completa"| e2
   f11 -->|"ejemplos de los contratos"| f4
   f11 -->|"selecciones de prueba"| f3
@@ -1146,6 +1152,16 @@ flowchart TB
   end
 ```
 
+
+Además de los trece archivos anteriores, el módulo incluye el minijuego en `juego/`:
+
+| Archivo | Responsabilidad única |
+|---|---|
+| `juego/game.html` | Página del minijuego «Encuentra al intruso». |
+| `juego/game.js` | Rondas, pista a los 15 s, puntuación y rangos. |
+| `juego/game.css` | Estilos propios del juego; reutiliza las variables de `estilo.css`. |
+
+No tiene contrato propio: dibuja sobre su propio lienzo y no escribe datos.
 </details>
 
 ### 4.6 Árbol del repositorio
@@ -1248,6 +1264,10 @@ AstroNova/
 │   │   ├── sensibilidad_spherex.json       Contiene el límite de detección de SPHEREx por detector.
 │   │   └── veredicto.js                    Decide si el planeta calculado supera el límite de SPHEREx.
 │   └── m9_sitio/
+│       ├── juego/                          Minijuego «Encuentra al intruso».
+│       │   ├── game.css                    Estilos del juego; reutiliza las variables de estilo.css.
+│       │   ├── game.html                   Página del minijuego.
+│       │   └── game.js                     Rondas, pista, puntuación y rangos.
 │       ├── pruebas/
 │       │   ├── lista_visual.md             Enumera las comprobaciones manuales de la web en navegador.
 │       │   └── prueba_sitio.js             Comprueba la lectura de datos sobre los ejemplos de los contratos.
@@ -1457,7 +1477,7 @@ De `requirements.txt` se retiraron `fastapi`, `uvicorn` (no hay backend), `panda
 
 ## 10. Fuera de alcance
 
-- **Minijuego** de encontrar el objeto: figura en la propuesta como extra. No tiene módulo. Podría añadirse como `m10` leyendo los mismos contratos que `m9_sitio`.
+- **Minijuego** de encontrar el objeto: figuraba en la propuesta como extra. **Ya está implementado** dentro de `m9_sitio/juego/`, porque lee los mismos `candidatos.json` y comparte las variables de estilo. No se separa como `m10`: no tiene contrato ni salida propios.
 - **Modo ciudadano** («¿Es real?»): opcional en la propuesta. Exige guardar votos, es decir, un backend. Incompatible con el sitio estático.
 - **Textos en inglés**, **descarga de la tabla en CSV**, **botón de compartir**.
 - **Orquestador único** del pipeline: se evita a propósito. Un archivo que lanzara todos los módulos tendría que conocerlos a todos. El orden de ejecución está escrito en `ARQUITECTURA.md`.
