@@ -3,7 +3,7 @@
    MODULO: m9_sitio (Lote D)
    ROL: Aplica la guía visual del proyecto con diseño adaptable a móvil.
    LEE: contratos/guia_visual.md (variables obligatorias).
-   PRODUCE: El aspecto de index.html y de juego/game.html.
+   PRODUCE: El aspecto de index.html.
    VERIFICACION: Las seis variables de la guía están definidas con su valor;
                  en pantalla menor de 900 px el visor queda sobre la tabla.
    ========================================================================== */

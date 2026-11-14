@@ -32,7 +32,6 @@
   </p>
   <div class="acciones">
     <button class="primario" id="btn-explorar">Explorar</button>
-    <button id="btn-jugar">Jugar</button>
     <button id="btn-calculadora">Calculadora</button>
   </div>
   <div class="campos-portada" id="portada-campos"></div>
@@ -162,7 +161,7 @@
   // Los botones de campo de la portada abren la aplicación con ese campo.
   HX.abrirApp = () => mostrarApp(true);
 
-  // El juego vuelve con ../index.html#app: entra directo al explorador.
+  // Se puede entrar directo al explorador con ../index.html#app.
   if (window.location.hash === "#app") {
     mostrarApp(false);
     history.replaceState({ vista: "app" }, "", "#app");
@@ -176,9 +175,6 @@
       ? evento.state.vista
       : (window.location.hash === "#app" ? "app" : "portada");
     if (vista === "app") mostrarApp(false); else mostrarPortada(false);
-  });
-  document.getElementById("btn-jugar").addEventListener("click", () => {
-    window.location.href = "juego/game.html";
   });
   document.getElementById("btn-calculadora").addEventListener("click", () => {
     window.location.href = "../m8_calculadora/calculadora.html";

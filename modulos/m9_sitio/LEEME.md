@@ -44,9 +44,6 @@ el código de otro.
 | `tabla.js` | Muestra la tabla ordenable de candidatos y exporta CSV. |
 | `ficha.js` | Muestra la ficha del candidato y el mapa del cielo. |
 | `espectro.js` | Dibuja la huella espectral del candidato seleccionado. |
-| `juego/game.html` | Página del minijuego «Encuentra al intruso». |
-| `juego/game.js` | Lógica del juego: rondas, pista, puntuación y rangos. |
-| `juego/game.css` | Estilos propios del juego; reutiliza las variables de `estilo.css`. |
 | `ejemplos/generar_datos.py` | Genera datos de demostración conformes a los contratos. |
 | `pruebas/lista_visual.md` | Comprobaciones manuales de la web. |
 

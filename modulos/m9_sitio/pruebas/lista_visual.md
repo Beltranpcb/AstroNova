@@ -14,8 +14,8 @@ Servir el repositorio desde la raíz y abrir
 ## Portada
 
 - [ ] Se lee el título **HUELLA X** con degradado.
-- [ ] Hay dos botones: **Explorar** y **Jugar**.
-- [ ] Aparecen tres botones de campo: Slipher, 3I/ATLAS y Luhman 16.
+- [ ] Hay dos botones: **Explorar** y **Calculadora**.
+- [ ] Aparecen los botones de los campos publicados.
 - [ ] Pulsar un campo abre la aplicación en ese campo.
 
 ## Visor
@@ -52,11 +52,3 @@ Servir el repositorio desde la raíz y abrir
 - [ ] No hay desplazamiento horizontal de la página.
 - [ ] Los botones siguen siendo pulsables.
 
-## Juego
-
-- [ ] El botón **Jugar** abre `juego/game.html`.
-- [ ] Cada ronda dura 30 s y hay cinco rondas.
-- [ ] A los 15 s se habilita **Pista** y la puntuación se reduce a la mitad.
-- [ ] Acertar revela la ficha del objeto y su mini espectro.
-- [ ] Fallar resta 20 puntos.
-- [ ] Al terminar se muestra la puntuación y un rango.
