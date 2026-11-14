@@ -33,6 +33,9 @@ Medir cuánto se mueve cada pareja propuesta, con su incertidumbre.
 | `incertidumbre.py` | Propaga la incertidumbre de posición hasta la velocidad. |
 | `clasificacion.py` | Asigna a cada pareja su clase de movimiento. |
 | `pruebas/prueba_movimiento.py` | Comprueba las medidas de movimiento sobre el ejemplo del contrato. |
+| `esquemas/movimiento.schema.json` | Copia del contrato `contratos/movimiento.schema.json` para verificar el módulo suelto. |
+| `ejemplos/campo_ejemplo/fuentes.json`, `movimiento.json` | Copias de `contratos/ejemplos/campo_ejemplo/` para verificar el módulo suelto. |
+| `pytest.ini` | Declara el nombrado en español de las pruebas cuando el módulo se ejecuta suelto. |
 
 ## Orden de ejecución
 
@@ -63,4 +66,4 @@ Los umbrales de significancia (2 y 5) son valores iniciales. Cambiarlos exige ac
 
 ## Estado
 
-Esqueleto sin código: el comando de verificación falla hasta que el lote implemente el módulo.
+Implementado. El comando de verificación pasa sobre el ejemplo del contrato: reproduce valor a valor el `movimiento.json` de ejemplo. Los umbrales de clase (2 y 5 sigmas) son valores iniciales por calibrar con datos reales.
