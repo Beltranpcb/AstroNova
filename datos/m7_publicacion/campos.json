@@ -1,7 +1,13 @@
 {
-  "_comentario": "Índice de los campos publicados.",
+  "_comentario": "Generado por m7_publicacion/indice_campos.py. Un campo aparece aquí solo cuando su meta.json y su candidatos.json están publicados.",
   "version_contrato": "1",
   "campos": [
+    {
+      "campo": "sphx_real",
+      "nombre": "Campo real de SPHEREx",
+      "ruta": "sphx_real",
+      "numero_candidatos": 6
+    },
     {
       "campo": "slipher",
       "nombre": "Asteroide (1766) Slipher",
