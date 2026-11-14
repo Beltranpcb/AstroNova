@@ -81,8 +81,13 @@ def url_recorte_datalink(url_datalink: str, ra_grados: float, dec_grados: float,
     )
 
 
-def obtener_bytes(url: str, reintentos: int = 3, espera_s: float = 2.0, timeout_s: float = 300.0) -> bytes:
-    """Descarga una URL con reintentos. Se puede sustituir en pruebas."""
+def obtener_bytes(url: str, reintentos: int = 5, espera_s: float = 3.0, timeout_s: float = 300.0) -> bytes:
+    """Descarga una URL con reintentos y espera creciente. Se puede sustituir en pruebas.
+
+    El servicio de recortes del IRSA devuelve 503 con frecuencia; cinco intentos
+    con espera 3, 6, 12 y 24 s resuelven los fallos pasajeros. Un 503 repetido en
+    todos los intentos suele ser definitivo para ese archivo, no del servicio.
+    """
     import requests
 
     ultimo_error: Exception | None = None
@@ -94,7 +99,7 @@ def obtener_bytes(url: str, reintentos: int = 3, espera_s: float = 2.0, timeout_
         except requests.RequestException as error:
             ultimo_error = error
             if intento < reintentos:
-                time.sleep(espera_s * intento)
+                time.sleep(min(espera_s * 2 ** (intento - 1), 30.0))
     raise RuntimeError(f"No se pudo descargar {url} tras {reintentos} intentos: {ultimo_error}")
 
 
