@@ -43,10 +43,10 @@ def _dias(horas: float) -> float:
     return horas / 24.0
 
 
-def _mejor_plantilla(exposiciones_detector: list[dict], a: dict, b: dict) -> dict | None:
-    """La exposición del mismo detector más cercana a 180 días de A, que diste más de 120 días de A y de B."""
+def _mejor_plantilla(exposiciones: list[dict], a: dict, b: dict) -> dict | None:
+    """La exposición más cercana a 180 días de A, que diste más de 120 días de A y de B."""
     mejor, mejor_puntuacion = None, None
-    for p in exposiciones_detector:
+    for p in exposiciones:
         d_a = abs(p["t_min"] - a["t_min"])
         d_b = abs(p["t_min"] - b["t_min"])
         if d_a <= PLANTILLA_MIN_DIAS or d_b <= PLANTILLA_MIN_DIAS:
@@ -58,7 +58,16 @@ def _mejor_plantilla(exposiciones_detector: list[dict], a: dict, b: dict) -> dic
 
 
 def elegir_trio(exposiciones: list[dict]) -> tuple[dict, dict, dict]:
-    """Devuelve (época A, época B, plantilla), las tres del mismo detector."""
+    """Devuelve (época A, época B, plantilla).
+
+    A y B son siempre del mismo detector. La plantilla se busca primero en ese
+    detector; si esa pasada no tiene ninguna exposición a más de 120 días —lo
+    habitual en DR1, donde un campo se visita una vez cada seis meses y no
+    siempre con el mismo detector— se acepta la de otro detector. La plantilla
+    solo sirve para identificar las estrellas fijas, así que sirve igual; quien
+    lea `seleccion.json` puede verlo comparando el campo `detector` de cada
+    exposición.
+    """
     por_detector: dict[int, list[dict]] = defaultdict(list)
     for e in exposiciones:
         por_detector[e["detector"]].append(e)
@@ -66,6 +75,7 @@ def elegir_trio(exposiciones: list[dict]) -> tuple[dict, dict, dict]:
     candidatos = []
     for detector, lista in por_detector.items():
         lista.sort(key=lambda e: e["t_min"])
+        otros = [e for e in exposiciones if e["detector"] != detector]
         for i, a in enumerate(lista):
             for b in lista[i + 1:]:
                 separacion_h = (b["t_min"] - a["t_min"]) * 24.0
@@ -73,7 +83,7 @@ def elegir_trio(exposiciones: list[dict]) -> tuple[dict, dict, dict]:
                     break  # la lista está ordenada: el resto queda aún más lejos
                 if separacion_h < SEPARACION_MIN_H:
                     continue
-                plantilla = _mejor_plantilla(lista, a, b)
+                plantilla = _mejor_plantilla(lista, a, b) or _mejor_plantilla(otros, a, b)
                 if plantilla is None:
                     continue
                 puntuacion = (
