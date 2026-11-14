@@ -7,6 +7,53 @@
 
 .juego-envoltorio { position: relative; }
 
+/* El panel de ronda y el resultado se superponen al lienzo. Estas reglas estaban
+   en la hoja antigua de la web y se perdieron al reescribir estilo.css: sin
+   ellas el resultado se pintaba como texto suelto debajo del lienzo. */
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .8rem;
+  padding: 1.5rem;
+  text-align: center;
+  background: rgba(11, 15, 26, .92);
+  z-index: 20;
+}
+.overlay.visible { display: flex; }
+.overlay h2 { margin: 0; font-size: 1.5rem; }
+.overlay p { margin: 0; color: var(--texto_secundario); max-width: 30rem; }
+
+.juego-barra {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: .7rem .9rem;
+  background: var(--panel);
+  border: 1px solid var(--borde-suave);
+  border-radius: var(--radio) var(--radio) 0 0;
+  font-size: .85rem;
+  flex-wrap: wrap;
+}
+.juego-barra .dato { font-family: var(--mono); color: var(--texto_secundario); }
+.juego-barra .dato b { color: var(--texto); }
+
+.juego-pie {
+  padding: .8rem .9rem;
+  border: 1px solid var(--borde-suave);
+  border-top: 0;
+  border-radius: 0 0 var(--radio) var(--radio);
+  background: var(--panel);
+  display: flex;
+  gap: .6rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
 #juego-lienzo { border-radius: 0; }
 
 .juego-pie #btn-pista:disabled {
