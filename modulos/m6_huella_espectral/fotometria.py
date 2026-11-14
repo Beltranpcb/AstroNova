@@ -49,11 +49,47 @@ def mascara_de_flags(flags, cabecera=None):
     return (np.asarray(flags).astype(np.int64) & ~(1 << bit)) != 0
 
 
+def _onda_densa(datos, x, y):
+    onda = np.asarray(datos, dtype=float)
+    return float(onda[int(round(y)), int(round(x))])
+
+
+def _onda_dispersa(hdul, datos, x, y):
+    """Longitud de onda de un píxel leída de la rejilla dispersa de SPHEREx.
+
+    `WCS-WAVE` no es una imagen: trae una rejilla de nodos (X, Y) y en cada nodo
+    un par (longitud de onda, incertidumbre). Las coordenadas X e Y están en el
+    marco del detector completo (2040×2040), no en el del recorte: el desplazamiento
+    se recupera de CRPIX1W, que el servicio de recortes deja negativo.
+    """
+    from scipy.interpolate import RegularGridInterpolator
+
+    xs = np.asarray(datos["X"][0], dtype=float)
+    ys = np.asarray(datos["Y"][0], dtype=float)
+    valores = np.asarray(datos["VALUES"][0], dtype=float)[:, :, 0]  # (len(ys), len(xs))
+
+    cabecera = hdul["IMAGE"].header
+    desplazamiento_x = -float(cabecera.get("CRPIX1W", 0.0))
+    desplazamiento_y = -float(cabecera.get("CRPIX2W", 0.0))
+    px, py = x + desplazamiento_x, y + desplazamiento_y
+
+    # Fuera de la rejilla se toma el nodo más cercano: el borde del detector.
+    px = float(np.clip(px, xs.min(), xs.max()))
+    py = float(np.clip(py, ys.min(), ys.max()))
+
+    interpolador = RegularGridInterpolator((ys, xs), valores, method="linear")
+    return float(interpolador((py, px)))
+
+
 def longitud_de_onda(hdul, x, y):
     if "WCS-WAVE" not in hdul:
         raise ValueError("el recorte no tiene extensión WCS-WAVE (contrato recortes_fits)")
-    onda = np.asarray(hdul["WCS-WAVE"].data, dtype=float)
-    return float(onda[int(round(y)), int(round(x))])
+    datos = hdul["WCS-WAVE"].data
+    if datos is None:
+        raise ValueError("la extensión WCS-WAVE está vacía")
+    if datos.dtype.names is None:
+        return _onda_densa(datos, x, y)
+    return _onda_dispersa(hdul, datos, x, y)
 
 
 def medir_en_recorte(hdul, ra_grados, dec_grados):
