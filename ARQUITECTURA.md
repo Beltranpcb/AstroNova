@@ -444,6 +444,8 @@ flowchart LR
     f10["espectro.js"]
     f11["pruebas/prueba_sitio.js"]
     f12["pruebas/lista_visual.md"]
+    f16["espectro3d.html"]
+    f17["espectro3d.js"]
   end
   e0(["m7_publicacion"])
   e2(["visitante"])
@@ -470,6 +472,8 @@ flowchart LR
   f8 -->|"filas visibles"| f1
   f9 -->|"ficha con mapa"| f1
   f10 -->|"gráfica rotulada"| f1
+  f1 -->|"botón 3D"| f16
+  f16 -->|"escena"| f17
   f1 -->|"página completa"| e2
   f11 -->|"ejemplos de los contratos"| f4
   f11 -->|"selecciones de prueba"| f3
@@ -1274,6 +1278,8 @@ AstroNova/
 │       ├── LEEME.md                        Describe el módulo junto a su comando de verificación.
 │       ├── carga_datos.js                  Lee los archivos publicados de un campo.
 │       ├── espectro.js                     Dibuja la huella espectral del candidato seleccionado.
+│       ├── espectro3d.html                 Página aparte con las huellas espectrales del campo en 3D.
+│       ├── espectro3d.js                   Escena WebGL con un listón por candidata.
 │       ├── estado_seleccion.js             Mantiene la selección actual de campo con su candidato.
 │       ├── estilo.css                      Aplica la guía visual con diseño adaptable a móvil.
 │       ├── ficha.js                        Muestra la ficha del candidato seleccionado.

@@ -52,3 +52,13 @@ Servir el repositorio desde la raíz y abrir
 - [ ] No hay desplazamiento horizontal de la página.
 - [ ] Los botones siguen siendo pulsables.
 
+## Huellas en 3D
+
+- [ ] El botón **3D** de la cabecera abre `espectro3d.html` con el campo actual.
+- [ ] Se dibuja un listón por candidata con su nombre y su color.
+- [ ] El eje horizontal marca 1, 2, 3, 4 y 5 µm.
+- [ ] Arrastrar gira la escena y la rueda acerca.
+- [ ] **Unir listones** muestra una malla translúcida entre ellos; volver a pulsar la quita.
+- [ ] **Reiniciar vista** devuelve la cámara a su sitio.
+- [ ] En vertical aparece el aviso de girar el dispositivo.
+- [ ] Un campo sin huellas muestra un aviso en lugar de una escena vacía.

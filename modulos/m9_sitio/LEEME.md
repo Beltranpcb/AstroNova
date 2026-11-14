@@ -39,6 +39,8 @@ el código de otro.
 | `estado_seleccion.js` | Mantiene el estado compartido y avisa de la selección. |
 | `carga_datos.js` | Lee los archivos publicados por m7_publicacion. |
 | `selector_campo.js` | Dibuja la lista de campos disponibles. |
+| `espectro3d.html` | Página aparte con las huellas espectrales del campo en 3D. |
+| `espectro3d.js` | Escena WebGL (three.js): un listón por candidata, ejes y unión opcional. |
 | `visor.js` | Dibuja las dos épocas en el lienzo según el modo elegido. |
 | `superposicion.js` | Dibuja sobre el visor la trayectoria de cada candidato. |
 | `tabla.js` | Muestra la tabla ordenable de candidatos y exporta CSV. |

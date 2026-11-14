@@ -46,6 +46,7 @@
   <header class="barra">
     <div class="titulo">HUELLA <span>X</span></div>
     <button id="btn-portada" class="volver">← Portada</button>
+    <button id="btn-3d" class="volver" title="Huellas espectrales en 3D">3D</button>
     <div class="campo-selector" id="selector-campos"></div>
   </header>
 
@@ -159,6 +160,11 @@
 
   // Los botones de campo de la portada abren la aplicación con ese campo.
   HX.abrirApp = () => mostrarApp(true);
+
+  // Huellas en 3D del campo que se está viendo.
+  document.getElementById("btn-3d").addEventListener("click", () => {
+    window.location.href = `espectro3d.html?campo=${encodeURIComponent(HX.estado.campo)}`;
+  });
 
   // Se puede entrar directo al explorador con ../index.html#app.
   if (window.location.hash === "#app") {
