@@ -71,4 +71,8 @@ La verificación no ejecuta ningún otro módulo: usa datos sintéticos o los ej
 
 ## Estado
 
-Esqueleto sin código: el comando de verificación falla hasta que el lote implemente el módulo.
+Implementado. Los cuatro comandos de arriba se ejecutan en ese orden y la
+verificación pasa: 13 pruebas en verde con `python -m pytest
+modulos/m7_publicacion/pruebas -q`. La unión solo necesita la biblioteca
+estándar; `control_publicacion.py` usa `jsonschema` para leer los esquemas de
+`contratos/`.
