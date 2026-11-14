@@ -44,6 +44,9 @@ el código de otro.
 | `tabla.js` | Muestra la tabla ordenable de candidatos y exporta CSV. |
 | `ficha.js` | Muestra la ficha del candidato y el mapa del cielo. |
 | `espectro.js` | Dibuja la huella espectral del candidato seleccionado. |
+| `analisis.js` | Alterna entre explorador y «Análisis de objetos» y gestiona sus pestañas. |
+| `comparador_logica.js` | Lógica pura del comparador: objetos con espectro válido, normalización y compatibilidad. |
+| `comparador.js` | Dibuja el comparador de espectros (selectores, gráfico con incertidumbres, avisos, CSV y PNG). |
 | `ejemplos/generar_datos.py` | Genera datos de demostración conformes a los contratos. |
 | `pruebas/lista_visual.md` | Comprobaciones manuales de la web. |
 
@@ -59,6 +62,20 @@ python3 -m http.server 8765
 
 La web busca los datos en `datos/m7_publicacion/` probando tres rutas relativas,
 de modo que funciona tanto servida desde la raíz como desde su propio directorio.
+
+## Análisis de objetos
+
+La cabecera tiene dos secciones: **Explorador** y **Análisis de objetos**. Esta última
+tiene dos pestañas:
+
+- **Comparar espectros**: compara dos espectros observados. Solo se listan objetos con
+  al menos dos puntos válidos; se puede ver el flujo medido (mJy) o normalizado
+  (método y longitud de onda visibles), hacer zoom y descargar CSV o PNG. Avisa si el
+  intervalo común es estrecho, la resolución difiere o el origen de los datos no coincide.
+  No clasifica nada: la comparación con plantillas es otra herramienta (pendiente).
+- **Identificar**: pendiente. Necesita el WCS del campo y la consulta de catálogos.
+
+Los datos de demostración llevan `origen: "sintetico"` y la web lo muestra en cada objeto.
 
 ## Datos de demostración
 
@@ -80,6 +97,12 @@ check-jsonschema --schemafile contratos/campos.schema.json datos/m7_publicacion/
 # La web arranca sin errores de recursos
 python3 -m http.server 8765 &
 curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8765/modulos/m9_sitio/index.html
+```
+
+Pruebas de lógica:
+
+```bash
+node --test modulos/m9_sitio/pruebas/prueba_sitio.js modulos/m9_sitio/pruebas/prueba_comparador.js
 ```
 
 Comprobaciones manuales: `pruebas/lista_visual.md`.

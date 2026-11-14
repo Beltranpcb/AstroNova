@@ -52,3 +52,13 @@ Servir el repositorio desde la raíz y abrir
 - [ ] No hay desplazamiento horizontal de la página.
 - [ ] Los botones siguen siendo pulsables.
 
+
+## Análisis de objetos · Comparar espectros
+
+- [ ] «Análisis de objetos» oculta el visor y la tabla; «Explorador» los devuelve.
+- [ ] Los selectores A y B solo listan objetos con espectro válido y muestran su origen.
+- [ ] Se ven dos curvas con estilos distintos (línea continua y discontinua) y barras de error.
+- [ ] «Espectros normalizados» indica el método y la longitud de onda de normalización.
+- [ ] Con datos sintéticos aparece el aviso de que el flujo absoluto no tiene valor físico.
+- [ ] Zoom (+, −, rueda) y «Restablecer» funcionan; CSV y PNG se descargan.
+- [ ] «Plantillas» aparece desactivado y «Identificar» dice que está pendiente.

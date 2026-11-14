@@ -46,10 +46,14 @@
   <header class="barra">
     <div class="titulo">HUELLA <span>X</span></div>
     <button id="btn-portada" class="volver">← Portada</button>
+    <nav class="vistas" aria-label="Secciones">
+      <button id="nav-explorador" class="activo" aria-current="page">Explorador</button>
+      <button id="nav-analisis" aria-current="false">Análisis de objetos</button>
+    </nav>
     <div class="campo-selector" id="selector-campos"></div>
   </header>
 
-  <main>
+  <main id="vista-explorador">
     <!-- Visor de épocas -->
     <section class="panel">
       <h2>Visor de épocas</h2>
@@ -96,7 +100,7 @@
   </main>
 
   <!-- Tabla de candidatos -->
-  <section class="tabla-caja panel">
+  <section class="tabla-caja panel" id="vista-tabla">
     <div class="tabla-cabecera">
       <h2>Candidatos</h2>
       <div class="filtros" id="filtros">
@@ -126,6 +130,58 @@
     </div>
   </section>
 
+  <!-- Análisis de objetos -->
+  <div id="vista-analisis" class="analisis" hidden>
+    <div class="pestanas" role="tablist" aria-label="Herramientas de análisis">
+      <button id="pestana-identificar" role="tab" aria-selected="false">Identificar</button>
+      <button id="pestana-comparar" role="tab" aria-selected="true" class="activo">Comparar espectros</button>
+    </div>
+
+    <section id="panel-identificar" class="panel analisis-panel" role="tabpanel" hidden>
+      <h2>Identificar objeto</h2>
+      <p class="vacio pendiente">
+        <b>Pendiente.</b> Esta herramienta convertirá un clic sobre la imagen en coordenadas
+        celestes (necesita la solución WCS del campo) y consultará catálogos y efemérides con
+        la fecha de observación. Todavía no está conectada a ningún servicio.
+      </p>
+    </section>
+
+    <section id="panel-comparar" class="panel analisis-panel" role="tabpanel">
+      <h2>Comparar espectros</h2>
+      <p class="aviso-conceptual">
+        Aquí se comparan <b>dos espectros observados</b> entre sí. No es una clasificación ni una
+        comparación con plantillas: una curva parecida no prueba que dos objetos sean del mismo tipo.
+      </p>
+      <div class="cmp-controles">
+        <label>Objeto A <select id="cmp-a" aria-label="Objeto A"></select></label>
+        <label>Objeto B <select id="cmp-b" aria-label="Objeto B"></select></label>
+      </div>
+      <p class="vacio cmp-nota" id="cmp-sin-espectro"></p>
+      <div class="cmp-controles">
+        <div class="grupo" role="group" aria-label="Modo de representación">
+          <button id="cmp-modo-flujo" class="activo">Flujo medido</button>
+          <button id="cmp-modo-normalizado">Espectros normalizados</button>
+          <button id="cmp-modo-plantillas" disabled title="Comparación con plantillas: pendiente">Plantillas (pendiente)</button>
+        </div>
+        <label id="cmp-lambda-caja" hidden>Normalizar en
+          <input id="cmp-lambda" type="number" min="0.75" max="5" step="0.05" value="2.00"> µm
+        </label>
+        <div class="grupo" role="group" aria-label="Zoom y descarga">
+          <button id="cmp-zoom-mas" aria-label="Acercar">+</button>
+          <button id="cmp-zoom-menos" aria-label="Alejar">−</button>
+          <button id="cmp-zoom-reset">Restablecer</button>
+          <button id="cmp-csv">CSV</button>
+          <button id="cmp-png">PNG</button>
+        </div>
+      </div>
+      <p class="vacio" id="cmp-estado" role="status"></p>
+      <div class="cmp-grafico-caja"><canvas id="cmp-grafico" aria-label="Espectros de los dos objetos"></canvas></div>
+      <p class="vacio cmp-nota" id="cmp-metodo"></p>
+      <div id="cmp-compatibilidad" class="cmp-compat"></div>
+      <div id="cmp-tarjetas" class="cmp-tarjetas"></div>
+    </section>
+  </div>
+
 </div>
 
 <script src="estado_seleccion.js"></script>
@@ -136,6 +192,9 @@
 <script src="tabla.js"></script>
 <script src="ficha.js"></script>
 <script src="espectro.js"></script>
+<script src="comparador_logica.js"></script>
+<script src="analisis.js"></script>
+<script src="comparador.js"></script>
 <script>
   const portada = document.getElementById("portada");
   const app = document.getElementById("app");
