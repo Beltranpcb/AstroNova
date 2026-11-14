@@ -35,6 +35,9 @@ Decir si cada pareja en movimiento corresponde a un objeto ya catalogado.
 | `consulta_catalogos.py` | Obtiene la respuesta del catálogo de cuerpos menores para cada pareja en movimiento. |
 | `cruce_posicional.py` | Decide el estado de catálogo de cada pareja. |
 | `pruebas/prueba_identificacion.py` | Comprueba el cruce con una caché sintética sin usar la red. |
+| `esquemas/identificacion.schema.json` | Copia del contrato `contratos/identificacion.schema.json` para verificar el módulo suelto. |
+| `ejemplos/campo_ejemplo/fuentes.json`, `movimiento.json`, `identificacion.json` | Copias de `contratos/ejemplos/campo_ejemplo/` para verificar el módulo suelto. |
+| `pytest.ini` | Declara el nombrado en español de las pruebas cuando el módulo se ejecuta suelto. |
 
 ## Orden de ejecución
 
@@ -65,4 +68,4 @@ La tolerancia de 15 segundos de arco cubre el desplazamiento por la órbita de S
 
 ## Estado
 
-Esqueleto sin código: el comando de verificación falla hasta que el lote implemente el módulo.
+Implementado. El comando de verificación pasa sin red, con fragmentos reales de las respuestas de los dos servicios. `consulta_catalogos.py` pregunta a MPChecker y a JPL sb_ident (dos pasos) y guarda las dos respuestas; `cruce_posicional.py` toma la coincidencia más cercana de cualquiera de los dos. Rellenar la caché cuesta unos 2 minutos por pareja por la lentitud de JPL: hacerlo con antelación.
