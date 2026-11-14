@@ -12,3 +12,301 @@
 # VERIFICACION: Es el propio verificador: pasa cuando se cumplen los criterios de aceptación del módulo.
 # ESTADO: Esqueleto sin código. Este archivo solo documenta el trabajo pendiente.
 # ============================================================================
+from __future__ import annotations
+
+import io
+import json
+import socket
+from pathlib import Path
+
+import pytest
+
+from modulos.m1_adquisicion import consulta_sia, descarga_recortes, seleccion_epocas
+
+RAIZ = Path(__file__).resolve().parents[3]
+ESQUEMA = RAIZ / "contratos" / "seleccion.schema.json"
+MJD_A = 60900.0
+
+
+@pytest.fixture(autouse=True)
+def sin_red(monkeypatch):
+    """Criterio 5: cualquier intento de abrir una conexión hace fallar la prueba."""
+    def prohibido(*args, **kwargs):
+        raise AssertionError("La prueba intentó abrir una conexión de red")
+
+    monkeypatch.setattr(socket.socket, "connect", prohibido)
+    monkeypatch.setattr(socket, "getaddrinfo", prohibido)
+
+
+def _exp(identificador, t_min, detector, coleccion="spherex_qr3"):
+    return {
+        "identificador": identificador,
+        "t_min": t_min,
+        "detector": detector,
+        "access_url": f"https://ejemplo.invalid/spherex/{identificador}.fits",
+        "coleccion": coleccion,
+    }
+
+
+def _listado(exposiciones):
+    return {
+        "campo": "campo_sintetico",
+        "nombre": "Campo sintético",
+        "centro": {"ra_grados": 150.0, "dec_grados": 2.0},
+        "radio_grados": 0.1,
+        "exposiciones": sorted(exposiciones, key=lambda e: e["t_min"]),
+    }
+
+
+def _listado_sintetico():
+    """Detector 3 sirve para A-B y plantilla; los detectores 1, 5 y 6 aportan serie; uno queda fuera de la ventana."""
+    return _listado([
+        _exp("d3_plantilla", MJD_A - 180.0, 3),
+        _exp("d3_a", MJD_A, 3),
+        _exp("d3_b", MJD_A + 0.25, 3),            # 6 h después de A
+        _exp("d3_lejana", MJD_A + 3.5, 3),        # 84 h: fuera del máximo de 72 h
+        _exp("d1_serie", MJD_A + 0.04, 1),
+        _exp("d5_serie", MJD_A + 0.16, 5),
+        _exp("d6_fuera_de_ventana", MJD_A + 2.0, 6),
+        _exp("d2_sola", MJD_A + 0.1, 2),          # un único detector-2: no puede formar trío
+    ])
+
+
+def _seleccion():
+    return seleccion_epocas.seleccionar(_listado_sintetico())
+
+
+def _por_papel(seleccion, papel):
+    return [e for e in seleccion["exposiciones"] if e["papel"] == papel]
+
+
+# --- criterios de aceptación ----------------------------------------------
+
+def prueba_la_red_esta_bloqueada():
+    with pytest.raises(AssertionError):
+        socket.create_connection(("irsa.ipac.caltech.edu", 443))
+
+
+def prueba_seleccion_valida_contra_el_contrato(tmp_path):
+    jsonschema = pytest.importorskip("jsonschema")
+    esquema = json.loads(ESQUEMA.read_text(encoding="utf-8"))
+    destino = seleccion_epocas.escribir_seleccion(_seleccion(), tmp_path)
+    datos = json.loads(destino.read_text(encoding="utf-8"))
+    jsonschema.Draft202012Validator(esquema).validate(datos)
+
+
+def prueba_un_unico_papel_de_cada_tipo():
+    seleccion = _seleccion()
+    for papel in ("epoca_a", "epoca_b", "plantilla"):
+        assert len(_por_papel(seleccion, papel)) == 1, papel
+    identificadores = [e["id_exposicion"] for e in seleccion["exposiciones"]]
+    assert len(identificadores) == len(set(identificadores))
+
+
+def prueba_a_b_y_plantilla_comparten_detector():
+    seleccion = _seleccion()
+    detectores = {e["detector"] for e in seleccion["exposiciones"] if e["papel"] in ("epoca_a", "epoca_b", "plantilla")}
+    assert detectores == {3}
+
+
+def prueba_a_dista_de_b_entre_0_5_y_72_horas():
+    seleccion = _seleccion()
+    a = _por_papel(seleccion, "epoca_a")[0]
+    b = _por_papel(seleccion, "epoca_b")[0]
+    horas = (b["mjd"] - a["mjd"]) * 24
+    assert 0.5 <= horas <= 72
+    assert horas == pytest.approx(6.0)
+
+
+def prueba_plantilla_dista_mas_de_120_dias_de_a():
+    seleccion = _seleccion()
+    a = _por_papel(seleccion, "epoca_a")[0]
+    plantilla = _por_papel(seleccion, "plantilla")[0]
+    assert abs(plantilla["mjd"] - a["mjd"]) > 120
+
+
+# --- comportamiento de la selección ---------------------------------------
+
+def prueba_la_serie_espectral_abarca_otros_detectores_dentro_de_la_ventana():
+    seleccion = _seleccion()
+    serie = {e["id_exposicion"] for e in _por_papel(seleccion, "serie_espectral")}
+    assert {"d1_serie", "d5_serie", "d2_sola"} <= serie
+    assert "d6_fuera_de_ventana" not in serie
+    assert "d3_lejana" not in serie
+
+
+def prueba_url_de_acceso_sin_parametros_de_recorte():
+    listado = _listado_sintetico()
+    for e in listado["exposiciones"]:
+        e["access_url"] += "?center=1,2&size=3"
+    for e in seleccion_epocas.seleccionar(listado)["exposiciones"]:
+        assert "?" not in e["url_acceso"]
+
+
+def prueba_sin_pareja_valida_se_explica_el_motivo():
+    # Solo dos exposiciones separadas 100 días: no hay pareja A-B ni plantilla.
+    listado = _listado([_exp("x1", MJD_A, 4), _exp("x2", MJD_A + 100.0, 4)])
+    with pytest.raises(seleccion_epocas.SeleccionImposible, match="detector 4"):
+        seleccion_epocas.seleccionar(listado)
+
+
+def prueba_una_pareja_a_mas_de_72_horas_no_vale():
+    # Con plantilla correcta, pero A y B separadas 80 h: ninguna pareja cumple el máximo.
+    listado = _listado([_exp("p", MJD_A - 180.0, 2), _exp("a", MJD_A, 2), _exp("b", MJD_A + 80.0 / 24.0, 2)])
+    with pytest.raises(seleccion_epocas.SeleccionImposible):
+        seleccion_epocas.seleccionar(listado)
+
+
+def prueba_una_pareja_a_menos_de_media_hora_no_vale():
+    listado = _listado([_exp("p", MJD_A - 180.0, 2), _exp("a", MJD_A, 2), _exp("b", MJD_A + 0.3 / 24.0, 2)])
+    with pytest.raises(seleccion_epocas.SeleccionImposible):
+        seleccion_epocas.seleccionar(listado)
+
+
+def prueba_los_limites_exactos_de_separacion_se_admiten():
+    for horas in (0.5, 72.0):
+        listado = _listado([_exp("p", MJD_A - 180.0, 2), _exp("a", MJD_A, 2), _exp("b", MJD_A + horas / 24.0, 2)])
+        seleccion = seleccion_epocas.seleccionar(listado)
+        a, b = _por_papel(seleccion, "epoca_a")[0], _por_papel(seleccion, "epoca_b")[0]
+        assert (b["mjd"] - a["mjd"]) * 24 == pytest.approx(horas)
+
+
+def prueba_sin_plantilla_lejana_no_hay_seleccion():
+    # Pareja A-B correcta, pero la única plantilla está a 100 días (menos de 120).
+    listado = _listado([_exp("p", MJD_A - 100.0, 2), _exp("a", MJD_A, 2), _exp("b", MJD_A + 0.25, 2)])
+    with pytest.raises(seleccion_epocas.SeleccionImposible):
+        seleccion_epocas.seleccionar(listado)
+
+
+# --- consulta_sia: normalización y orden (sin red) --------------------------
+
+def prueba_el_listado_sale_ordenado_por_t_min_con_los_datos_necesarios():
+    base = "https://irsa.ipac.caltech.edu/ibe/data/spherex/qr/level2/2025W19_2B/l2b-v11/{d}/level2_2025W19_2B_0073_2D{d}_spx_l2b-v11.fits"
+    filas = {
+        "spherex_qr3": [
+            {"access_url": base.format(d=4), "t_min": 60900.30, "energy_bandpassname": "SPHEREx-D4", "calib_level": 2},
+            {"access_url": base.format(d=2), "t_min": 60900.10, "energy_bandpassname": "SPHEREx-D2", "calib_level": 2},
+        ],
+        "spherex_dr1": [
+            {"access_url": base.format(d=2), "t_min": 60900.10, "energy_bandpassname": "SPHEREx-D2", "calib_level": 2},  # duplicado
+            {"access_url": base.format(d=5).replace("2D5", "2D5x"), "t_min": 60900.20, "energy_bandpassname": None, "calib_level": 3},  # nivel 3: se descarta
+        ],
+    }
+    campo = {"campo": "campo_sintetico", "nombre": "Campo sintético", "ra_grados": 150.0, "dec_grados": 2.0, "radio_grados": 0.1}
+    listado = consulta_sia.construir_listado(campo, filas)
+    tiempos = [e["t_min"] for e in listado["exposiciones"]]
+    assert tiempos == sorted(tiempos) == [60900.10, 60900.30]
+    for e in listado["exposiciones"]:
+        assert {"identificador", "t_min", "detector", "access_url"} <= e.keys()
+    assert [e["detector"] for e in listado["exposiciones"]] == [2, 4]
+
+
+def prueba_el_detector_sale_de_la_banda_o_del_nombre_del_archivo():
+    assert consulta_sia.detector_de_fila("SPHEREx-D3", "https://x.invalid/a.fits") == 3
+    assert consulta_sia.detector_de_fila(None, "https://x.invalid/level2_2025W18_1B_0023_2D4_spx_l2b.fits") == 4
+    assert consulta_sia.detector_de_fila(None, "https://x.invalid/sin_pista.fits") is None
+
+
+def prueba_consultar_campo_ordena_con_una_consulta_falsa():
+    campo = {"campo": "campo_sintetico", "nombre": "Campo sintético", "ra_grados": 150.0, "dec_grados": 2.0, "radio_grados": 0.1}
+
+    def consulta_falsa(ra, dec, radio, coleccion):
+        if coleccion != "spherex_qr3":
+            return []
+        return [
+            {"access_url": "https://x.invalid/b_2D1_.fits", "t_min": 5.0, "energy_bandpassname": "SPHEREx-D1"},
+            {"access_url": "https://x.invalid/a_2D1_.fits", "t_min": 1.0, "energy_bandpassname": "SPHEREx-D1"},
+        ]
+
+    listado = consulta_sia.consultar_campo(campo, consulta=consulta_falsa)
+    assert [e["t_min"] for e in listado["exposiciones"]] == [1.0, 5.0]
+
+
+def prueba_campos_objetivo_bien_formados():
+    campos = consulta_sia.cargar_campos()  # valida los cinco datos y el patrón del identificador
+    identificadores = [c["campo"] for c in campos]
+    assert len(identificadores) == len(set(identificadores))
+
+
+def prueba_un_campo_mal_formado_se_rechaza():
+    with pytest.raises(ValueError):
+        consulta_sia.validar_campo({"campo": "Campo Mayusculas", "nombre": "x", "ra_grados": 1, "dec_grados": 1, "radio_grados": 0.1})
+    with pytest.raises(ValueError):
+        consulta_sia.validar_campo({"campo": "ok", "nombre": "x", "ra_grados": 1, "dec_grados": 1})
+
+
+# --- descarga_recortes: URL y validación del FITS ---------------------------
+
+def _fits_sintetico(extensiones):
+    from astropy.io import fits
+    import numpy as np
+
+    hdus = [fits.PrimaryHDU()] + [fits.ImageHDU(np.zeros((4, 4), dtype=np.float32), name=n) for n in extensiones]
+    memoria = io.BytesIO()
+    fits.HDUList(hdus).writeto(memoria)
+    return memoria.getvalue()
+
+
+def prueba_la_url_de_recorte_lleva_center_y_el_lado_completo():
+    url = descarga_recortes.url_recorte("https://irsa.invalid/x.fits?viejo=1", 150.0, 2.0, 0.1)
+    assert url == "https://irsa.invalid/x.fits?center=150.00000000,2.00000000&size=0.2"
+
+
+def _preparar_seleccion(tmp_path):
+    seleccion = _seleccion()
+    seleccion_epocas.escribir_seleccion(seleccion, tmp_path)
+    return seleccion
+
+
+def prueba_se_guarda_un_fits_por_exposicion_con_su_nombre(tmp_path):
+    seleccion = _preparar_seleccion(tmp_path)
+    pedidas = []
+
+    def obtener_falso(url):
+        pedidas.append(url)
+        return _fits_sintetico(descarga_recortes.EXTENSIONES_OBLIGATORIAS)
+
+    rutas = descarga_recortes.descargar_campo("campo_sintetico", tmp_path, obtener=obtener_falso)
+    esperados = {e["archivo_recorte"] for e in seleccion["exposiciones"]}
+    assert {r.name for r in rutas} == esperados
+    assert {p.name for p in (tmp_path / "campo_sintetico" / "recortes").iterdir()} == esperados  # sin restos .parte
+    assert all("center=150.00000000,2.00000000&size=0.2" in u for u in pedidas)
+    assert descarga_recortes.extensiones_que_faltan(rutas[0]) == []
+
+
+def prueba_no_se_vuelve_a_descargar_lo_que_ya_es_valido(tmp_path):
+    _preparar_seleccion(tmp_path)
+    llamadas = []
+
+    def obtener_falso(url):
+        llamadas.append(url)
+        return _fits_sintetico(descarga_recortes.EXTENSIONES_OBLIGATORIAS)
+
+    descarga_recortes.descargar_campo("campo_sintetico", tmp_path, obtener=obtener_falso)
+    n = len(llamadas)
+    descarga_recortes.descargar_campo("campo_sintetico", tmp_path, obtener=obtener_falso)
+    assert len(llamadas) == n
+    descarga_recortes.descargar_campo("campo_sintetico", tmp_path, obtener=obtener_falso, forzar=True)
+    assert len(llamadas) == 2 * n
+
+
+def prueba_un_fits_sin_las_seis_extensiones_se_rechaza(tmp_path):
+    _preparar_seleccion(tmp_path)
+
+    def obtener_falso(url):
+        return _fits_sintetico(("IMAGE", "FLAGS"))  # faltan VARIANCE, ZODI, PSF, WCS-WAVE
+
+    with pytest.raises(RuntimeError, match="PSF"):
+        descarga_recortes.descargar_campo("campo_sintetico", tmp_path, obtener=obtener_falso)
+    assert not any((tmp_path / "campo_sintetico" / "recortes").iterdir())  # no queda ningún archivo inválido
+
+
+def prueba_un_archivo_que_no_es_fits_se_rechaza(tmp_path):
+    _preparar_seleccion(tmp_path)
+    with pytest.raises(RuntimeError, match="no es un FITS"):
+        descarga_recortes.descargar_campo("campo_sintetico", tmp_path, obtener=lambda url: b"<html>error</html>")
+
+
+def prueba_un_nombre_de_recorte_con_ruta_se_rechaza():
+    with pytest.raises(ValueError):
+        descarga_recortes._nombre_seguro("../fuera.fits")

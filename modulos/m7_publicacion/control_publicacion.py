@@ -31,8 +31,21 @@ from pathlib import Path
 
 from jsonschema import Draft202012Validator
 
+RAIZ_MODULO = Path(__file__).resolve().parent
 RAIZ_DATOS_POR_DEFECTO = "datos"
-RAIZ_CONTRATOS_POR_DEFECTO = "contratos"
+
+# Los esquemas viven en contratos/ cuando el árbol completo está presente. Si
+# este módulo se usa suelto, se leen los que viajan con él en esquemas/.
+RAIZ_ESQUEMAS_PROPIOS = RAIZ_MODULO / "esquemas"
+
+
+def buscar_contratos():
+    """Sube por los directorios padre hasta encontrar contratos/."""
+    for base in RAIZ_MODULO.parents:
+        candidato = base / "contratos"
+        if candidato.is_dir():
+            return candidato
+    return None
 
 # Nombre de archivo publicado -> esquema que debe cumplir.
 ESQUEMAS = {
@@ -61,6 +74,19 @@ def leer_json(ruta):
         return json.load(archivo)
 
 
+def resolver_contratos(raiz_contratos=None):
+    """Devuelve el directorio de esquemas que se debe usar.
+
+    Orden de preferencia: el que pida quien llama, luego `contratos/` del
+    repositorio y, si no existe, los esquemas propios del módulo. Así el
+    control funciona igual dentro del árbol completo que suelto.
+    """
+    if raiz_contratos is not None:
+        return Path(raiz_contratos)
+    canonico = buscar_contratos()
+    if canonico is not None:
+        return canonico
+    return RAIZ_ESQUEMAS_PROPIOS
 def cargar_validador(raiz_contratos, nombre_esquema):
     """Devuelve un validador del esquema pedido, o None si no se puede leer."""
     ruta = Path(raiz_contratos) / nombre_esquema
@@ -86,8 +112,9 @@ def validar_json(ruta, validador):
     return ["%s: %s" % (ruta, describir_error(error)) for error in errores]
 
 
-def validar(raiz_datos=RAIZ_DATOS_POR_DEFECTO, raiz_contratos=RAIZ_CONTRATOS_POR_DEFECTO):
+def validar(raiz_datos=RAIZ_DATOS_POR_DEFECTO, raiz_contratos=None):
     """Recorre la publicación y devuelve la lista de incumplimientos."""
+    raiz_contratos = resolver_contratos(raiz_contratos)
     base = Path(raiz_datos) / "m7_publicacion"
     if not base.is_dir():
         return ["no existe el directorio publicado %s" % base]

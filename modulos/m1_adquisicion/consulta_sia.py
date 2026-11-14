@@ -12,3 +12,213 @@
 # VERIFICACION: El listado sale ordenado por t_min; cada fila tiene identificador, t_min, detector, access_url.
 # ESTADO: Esqueleto sin código. Este archivo solo documenta el trabajo pendiente.
 # ============================================================================
+from __future__ import annotations
+
+import argparse
+import io
+import json
+import re
+import sys
+import time
+from pathlib import Path
+from urllib.parse import urlparse
+
+RAIZ = Path(__file__).resolve().parents[2]
+RUTA_CAMPOS = Path(__file__).with_name("campos_objetivo.json")
+DIR_DATOS = RAIZ / "datos" / "m1_adquisicion"
+
+URL_SIA2 = "https://irsa.ipac.caltech.edu/SIA"
+COLECCIONES = ("spherex_qr3", "spherex_dr1", "spherex_dr1_deep")
+
+CLAVES_CAMPO = ("campo", "nombre", "ra_grados", "dec_grados", "radio_grados")
+PATRON_CAMPO = re.compile(r"^[a-z0-9_]+$")
+
+
+# --- campos objetivo -------------------------------------------------------
+
+def validar_campo(entrada: dict) -> None:
+    """Lanza ValueError si la entrada de campos_objetivo.json está mal formada."""
+    faltan = [k for k in CLAVES_CAMPO if k not in entrada]
+    if faltan:
+        raise ValueError(f"Campo sin los datos {faltan}: {entrada!r}")
+    if not PATRON_CAMPO.match(str(entrada["campo"])):
+        raise ValueError(
+            f"Identificador de campo no válido: {entrada['campo']!r} "
+            "(solo minúsculas, cifras, guion bajo)"
+        )
+    if not 0 <= entrada["ra_grados"] <= 360:
+        raise ValueError(f"ra_grados fuera de [0, 360] en {entrada['campo']}")
+    if not -90 <= entrada["dec_grados"] <= 90:
+        raise ValueError(f"dec_grados fuera de [-90, 90] en {entrada['campo']}")
+    if not entrada["radio_grados"] > 0:
+        raise ValueError(f"radio_grados debe ser positivo en {entrada['campo']}")
+
+
+def cargar_campos(ruta: Path = RUTA_CAMPOS) -> list[dict]:
+    with open(ruta, encoding="utf-8") as f:
+        campos = json.load(f)["campos"]
+    for entrada in campos:
+        validar_campo(entrada)
+    return campos
+
+
+def buscar_campo(identificador: str, campos: list[dict] | None = None) -> dict:
+    campos = cargar_campos() if campos is None else campos
+    for entrada in campos:
+        if entrada["campo"] == identificador:
+            return entrada
+    conocidos = ", ".join(c["campo"] for c in campos) or "(ninguno: rellena campos_objetivo.json)"
+    raise KeyError(f"El campo {identificador!r} no está en campos_objetivo.json. Campos: {conocidos}")
+
+
+# --- normalización de filas SIA2 -------------------------------------------
+
+def _escalar(valor):
+    """Convierte valores de astropy (enmascarados, bytes, numpy) en tipos de Python."""
+    import numpy as np
+
+    if valor is None or np.ma.is_masked(valor):
+        return None
+    if isinstance(valor, bytes):
+        return valor.decode("utf-8", errors="replace")
+    if hasattr(valor, "item"):
+        return valor.item()
+    return valor
+
+
+def detector_de_fila(nombre_banda, url: str) -> int | None:
+    """Detector 1 a 6: primero por energy_bandpassname ('SPHEREx-D2'), si no por el nombre del archivo."""
+    if nombre_banda:
+        m = re.search(r"D([1-6])\s*$", str(nombre_banda))
+        if m:
+            return int(m.group(1))
+    m = re.search(r"_2D([1-6])_", urlparse(url).path)
+    return int(m.group(1)) if m else None
+
+
+def identificador_de_url(url: str) -> str:
+    """Nombre del FITS sin extensión, apto como nombre de archivo (patrón del contrato seleccion)."""
+    nombre = Path(urlparse(url).path).stem
+    return re.sub(r"[^A-Za-z0-9_.-]", "_", nombre)
+
+
+def normalizar_fila(fila: dict, coleccion: str) -> dict | None:
+    """Fila SIA2 -> fila del listado. Devuelve None si no es una imagen de nivel 2 utilizable."""
+    url = _escalar(fila.get("access_url"))
+    t_min = _escalar(fila.get("t_min"))
+    if not url or t_min is None:
+        return None
+    nivel = _escalar(fila.get("calib_level"))
+    if nivel is not None and int(nivel) != 2:
+        return None
+    detector = detector_de_fila(_escalar(fila.get("energy_bandpassname")), url)
+    if detector is None:
+        return None
+    return {
+        "identificador": identificador_de_url(url),
+        "t_min": float(t_min),
+        "detector": detector,
+        "access_url": url,
+        "coleccion": coleccion,
+    }
+
+
+def construir_listado(campo: dict, filas_por_coleccion: dict[str, list[dict]]) -> dict:
+    """Une las filas de todas las colecciones: sin duplicados y ordenadas por t_min. No usa la red."""
+    vistas_url: set[str] = set()
+    vistas_instante: set[tuple[int, float]] = set()
+    exposiciones: list[dict] = []
+    for coleccion in COLECCIONES:  # el orden de COLECCIONES decide qué copia se conserva
+        for fila in filas_por_coleccion.get(coleccion, []):
+            nueva = normalizar_fila(fila, coleccion)
+            if nueva is None:
+                continue
+            instante = (nueva["detector"], round(nueva["t_min"], 6))
+            if nueva["access_url"] in vistas_url or instante in vistas_instante:
+                continue
+            vistas_url.add(nueva["access_url"])
+            vistas_instante.add(instante)
+            exposiciones.append(nueva)
+    exposiciones.sort(key=lambda e: (e["t_min"], e["detector"], e["identificador"]))
+    return {
+        "campo": campo["campo"],
+        "nombre": campo["nombre"],
+        "centro": {"ra_grados": campo["ra_grados"], "dec_grados": campo["dec_grados"]},
+        "radio_grados": campo["radio_grados"],
+        "exposiciones": exposiciones,
+    }
+
+
+# --- red -------------------------------------------------------------------
+
+def consultar_sia2(ra: float, dec: float, radio: float, coleccion: str,
+                   reintentos: int = 3, espera_s: float = 2.0, timeout_s: float = 120.0) -> list[dict]:
+    """Pide a IRSA las exposiciones de una colección que cubren el círculo (ra, dec, radio), en grados."""
+    import requests
+    from astropy.io.votable import parse_single_table
+
+    parametros = {"COLLECTION": coleccion, "POS": f"circle {ra} {dec} {radio}"}
+    ultimo_error: Exception | None = None
+    for intento in range(1, reintentos + 1):
+        try:
+            respuesta = requests.get(URL_SIA2, params=parametros, timeout=timeout_s)
+            respuesta.raise_for_status()
+            tabla = parse_single_table(io.BytesIO(respuesta.content)).to_table(use_names_over_ids=True)
+            return [{nombre: fila[nombre] for nombre in tabla.colnames} for fila in tabla]
+        except Exception as error:  # red, HTTP 5xx o VOTable de error de IRSA
+            ultimo_error = error
+            if intento < reintentos:
+                time.sleep(espera_s * intento)
+    raise RuntimeError(f"SIA2 falló en {coleccion} tras {reintentos} intentos: {ultimo_error}")
+
+
+def consultar_campo(campo: dict, consulta=consultar_sia2) -> dict:
+    """Consulta las tres colecciones y devuelve el listado. `consulta` se puede sustituir en pruebas."""
+    filas: dict[str, list[dict]] = {}
+    errores: list[str] = []
+    for coleccion in COLECCIONES:
+        try:
+            filas[coleccion] = consulta(campo["ra_grados"], campo["dec_grados"], campo["radio_grados"], coleccion)
+        except RuntimeError as error:
+            errores.append(str(error))
+            print(f"AVISO: {error}", file=sys.stderr)
+    if len(errores) == len(COLECCIONES):
+        raise RuntimeError("Ninguna colección respondió:\n  " + "\n  ".join(errores))
+    listado = construir_listado(campo, filas)
+    if not listado["exposiciones"]:
+        raise RuntimeError(
+            f"Ninguna exposición de nivel 2 cubre el campo {campo['campo']!r}. "
+            "Comprueba la cobertura o usa el campo de reserva."
+        )
+    return listado
+
+
+# --- salida ----------------------------------------------------------------
+
+def escribir_listado(listado: dict, dir_datos: Path = DIR_DATOS) -> Path:
+    destino = dir_datos / listado["campo"] / "listado_exposiciones.json"
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    with open(destino, "w", encoding="utf-8") as f:
+        json.dump(listado, f, ensure_ascii=False, indent=2)
+        f.write("\n")
+    return destino
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Lista las exposiciones de SPHEREx que cubren un campo.")
+    parser.add_argument("campo", help="identificador del campo en campos_objetivo.json")
+    args = parser.parse_args(argv)
+    try:
+        campo = buscar_campo(args.campo)
+        listado = consultar_campo(campo)
+    except (KeyError, ValueError, RuntimeError) as error:
+        print(f"ERROR: {error.args[0] if isinstance(error, KeyError) else error}", file=sys.stderr)
+        return 1
+    destino = escribir_listado(listado)
+    detectores = sorted({e["detector"] for e in listado["exposiciones"]})
+    print(f"{len(listado['exposiciones'])} exposiciones (detectores {detectores}) -> {destino}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -2,7 +2,7 @@
 # ARCHIVO: modulos/m7_publicacion/pruebas/prueba_publicacion.py
 # MODULO: m7_publicacion (Lote A)
 # ROL: Comprueba la unión sobre los ejemplos de los contratos.
-# LEE: Los siete JSON de contratos/ejemplos/campo_ejemplo/; contratos/ejemplos/campos.json.
+# LEE: Los siete JSON de modulos/m7_publicacion/ejemplos/.
 # PRODUCE: El veredicto de pytest.
 # FUNCIONAMIENTO PREVISTO:
 #   Recibe de prueba: ejemplos de los contratos.
@@ -39,8 +39,8 @@ from modulos.m7_publicacion.indice_campos import escribir_campos  # noqa: E402
 from modulos.m7_publicacion.union_candidatos import unir_campo  # noqa: E402
 
 CAMPO = "campo_ejemplo"
-EJEMPLOS = RAIZ / "contratos" / "ejemplos"
-CONTRATOS = RAIZ / "contratos"
+EJEMPLOS = RAIZ / "modulos" / "m7_publicacion" / "ejemplos"
+CONTRATOS = RAIZ / "modulos" / "m7_publicacion" / "esquemas"
 
 # (directorio de datos, archivo del ejemplo que se copia tal cual)
 TABLAS_DE_ENTRADA = (
@@ -221,11 +221,11 @@ def prueba_control_rechaza_un_json_ilegible(publicado):
 
 
 def prueba_control_sale_con_codigo_cero_por_linea_de_ordenes(publicado, tmp_path):
-    """La orden documentada debe poder ejecutarse tal cual, sin argumentos."""
-    destino_contratos = tmp_path / "contratos"
-    destino_contratos.mkdir(exist_ok=True)
-    for esquema in CONTRATOS.glob("*.schema.json"):
-        shutil.copyfile(esquema, destino_contratos / esquema.name)
+    """La orden documentada debe poder ejecutarse tal cual, sin argumentos.
+
+    Se ejecuta desde un directorio ajeno al repositorio y sin `contratos/`:
+    el control debe encontrar por sí solo los esquemas que viajan con el módulo.
+    """
 
     entorno = dict(os.environ)
     entorno["PYTHONPATH"] = str(RAIZ)
