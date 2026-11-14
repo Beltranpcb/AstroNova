@@ -14,8 +14,6 @@ Proyecto del equipo AstroNova para NASA Space Apps 2026, reto SPHEREx / Planeta 
 
 HUELLA X es una web pública que muestra qué se mueve entre dos observaciones del telescopio SPHEREx e identifica la naturaleza de cada objeto gracias a su espectro infrarrojo.
 
-> **Estado del repositorio.** Contiene la **arquitectura completa sin código**: 88 archivos, cada uno con un comentario que describe su rol, lo que lee, lo que produce, cómo se verifica. Ningún archivo contiene todavía funciones ni algoritmos. Implementarlos es el trabajo de las 48 horas del hackathon.
-
 ## Índice
 
 1. [El problema](#1-el-problema)
