@@ -25,7 +25,15 @@ import jsonschema
 from modulos.m5_identificacion import consulta_catalogos, cruce_posicional
 
 EJEMPLOS = Path(__file__).resolve().parents[1] / "ejemplos" / "campo_ejemplo"
-ESQUEMA_IDENTIFICACION = json.loads((Path(__file__).resolve().parents[1] / "esquemas" / "identificacion.schema.json").read_text(encoding="utf-8"))
+def _ruta_esquema(nombre):
+    """Devuelve contratos/<nombre> si existe el arbol completo; si no, esquemas/<nombre>."""
+    for base in Path(__file__).resolve().parents:
+        candidato = base / "contratos" / nombre
+        if candidato.is_file():
+            return candidato
+    return Path(__file__).resolve().parents[1] / "esquemas" / nombre
+
+ESQUEMA_IDENTIFICACION = json.loads(_ruta_esquema("identificacion.schema.json").read_text(encoding="utf-8"))
 
 # Fragmento real devuelto por MPChecker el 14-11-2026 para RA 10h, Dec +10, 2025-08-10.
 HTML_MPC = """<html><body><pre>
