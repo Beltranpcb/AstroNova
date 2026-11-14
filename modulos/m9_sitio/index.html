@@ -47,6 +47,7 @@
 
   <header class="barra">
     <div class="titulo">HUELLA <span>X</span></div>
+    <button id="btn-portada" class="volver">← Portada</button>
     <div class="campo-selector" id="selector-campos"></div>
   </header>
 
@@ -135,10 +136,24 @@
 <script src="ficha.js"></script>
 <script src="espectro.js"></script>
 <script>
-  document.getElementById("btn-explorar").addEventListener("click", () => {
-    document.getElementById("portada").style.display = "none";
-    document.getElementById("app").classList.add("visible");
+  const portada = document.getElementById("portada");
+  const app = document.getElementById("app");
+
+  const abrirApp = () => {
+    portada.style.display = "none";
+    app.classList.add("visible");
+  };
+
+  document.getElementById("btn-explorar").addEventListener("click", abrirApp);
+
+  // Volver a la portada desde el explorador.
+  document.getElementById("btn-portada").addEventListener("click", () => {
+    app.classList.remove("visible");
+    portada.style.display = "flex";
   });
+
+  // El juego vuelve con ../index.html#app: entra directo al explorador.
+  if (window.location.hash === "#app") abrirApp();
   document.getElementById("btn-jugar").addEventListener("click", () => {
     window.location.href = "juego/game.html";
   });
