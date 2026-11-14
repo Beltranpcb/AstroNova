@@ -112,7 +112,7 @@ def prueba_parametros_jpl_siguen_el_formato_de_la_api():
     assert p["obs-time"] == "2025-08-13_00:00:00"
     assert p["fov-ra-center"] == "10-00-00.00"
     assert p["fov-dec-center"] == "M02-00-00.00"
-    assert p["fov-ra-hwidth"] == p["fov-dec-hwidth"] == round(300 / 3600, 5)
+    assert p["fov-ra-hwidth"] == p["fov-dec-hwidth"] == round(consulta_catalogos.RADIO_BUSQUEDA_SEGARC / 3600, 5)
     assert p["two-pass"] == "true"
 
 
@@ -120,7 +120,7 @@ def prueba_formulario_mpchecker_usa_geocentro_y_radio_en_minutos():
     f = consulta_catalogos.formulario_mpchecker(150.0, 2.0, 60900.25)
     assert (f["year"], f["month"], f["day"]) == ("2025", "08", "13.25")
     assert f["ra"] == "10 00 00.00" and f["decl"] == "+02 00 00.00"
-    assert f["oc"] == "500" and f["radius"] == "5"
+    assert f["oc"] == "500" and f["radius"] == str(int(consulta_catalogos.RADIO_BUSQUEDA_SEGARC / 60))
 
 
 def prueba_interpretar_mpchecker_devuelve_los_tres_objetos():
@@ -167,7 +167,7 @@ def prueba_primera_ejecucion_escribe_la_cache(tmp_path, servicios_falsos):
     assert servicios_falsos == {"mpchecker": 2, "jpl_sb_ident": 2}
     contenido = json.loads(nuevos[0].read_text(encoding="utf-8"))
     assert contenido["id_pareja"] == "p001"
-    assert contenido["consulta"]["radio_segarc"] == 300.0
+    assert contenido["consulta"]["radio_segarc"] == consulta_catalogos.RADIO_BUSQUEDA_SEGARC
     assert contenido["respuestas"]["mpchecker"]["estado"] == "ok"
     assert len(contenido["respuestas"]["mpchecker"]["objetos"]) == 3
     assert len(contenido["respuestas"]["jpl_sb_ident"]["objetos"]) == 2

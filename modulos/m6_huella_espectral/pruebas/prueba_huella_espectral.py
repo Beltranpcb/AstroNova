@@ -370,3 +370,37 @@ def prueba_el_pipeline_completo_clasifica_y_valida(tmp_path):
     assert datos["espectros"][0]["tipo"] == "cometa"
     assert datos["espectros"][0]["ajustes_plantilla"]
     assert len(datos["espectros"][0]["puntos"]) == len(lam)
+
+
+def prueba_la_longitud_de_onda_sale_de_la_rejilla_dispersa():
+    """WCS-WAVE real no es una imagen: es una rejilla de nodos con (onda, error)."""
+
+    class _Hdu:
+        def __init__(self, data=None, header=None):
+            self.data = data
+            self.header = header or {}
+
+    xs = np.linspace(1, 2040, 9)
+    ys = np.linspace(1, 2040, 14)
+    valores = np.zeros((14, 9, 2), dtype=float)
+    for i, _yv in enumerate(ys):
+        for j, xv in enumerate(xs):
+            valores[i, j, 0] = 4.4 + 0.6 * (xv / 2040.0)
+            valores[i, j, 1] = 0.04
+    tipo = np.dtype([("X", "i4", (9,)), ("Y", "i4", (14,)), ("VALUES", "f8", (14, 9, 2))])
+    registro = np.zeros(1, dtype=tipo)
+    registro["X"][0] = xs.astype("i4")
+    registro["Y"][0] = ys.astype("i4")
+    registro["VALUES"][0] = valores
+
+    # CRPIX1W negativo: el recorte empieza en la columna 856 del detector.
+    hdul = {
+        "IMAGE": _Hdu(np.zeros((234, 234)), {"CRPIX1W": -855.0, "CRPIX2W": -830.0}),
+        "WCS-WAVE": _Hdu(registro),
+    }
+
+    onda = fotometria.longitud_de_onda(hdul, 0.0, 0.0)
+    assert onda == pytest.approx(4.4 + 0.6 * (856 / 2040.0), abs=0.01)
+
+    onda2 = fotometria.longitud_de_onda(hdul, 100.0, 50.0)
+    assert onda2 == pytest.approx(4.4 + 0.6 * ((100 + 855) / 2040.0), abs=0.01)

@@ -6,11 +6,14 @@
 # PRODUCE: datos/m1_adquisicion/<campo>/recortes/<id_exposicion>.fits.
 # FUNCIONAMIENTO PREVISTO:
 #   Recibe de seleccion_epocas.py: seleccion.json.
-#   1. Añadir center, size a cada url_acceso  ->  URL de recorte
-#   2. Pedir el recorte a IRSA  ->  bytes FITS
-#   3. Guardar con el nombre archivo_recorte  ->  recortes FITS crudos
+#   1. Si la exposición es un DataLink, resolver la ruta del FITS  ->  ruta relativa
+#   2. Añadir center y size a la ruta  ->  URL de recorte
+#   3. Pedir el recorte a IRSA  ->  bytes FITS
+#   4. Guardar con el nombre archivo_recorte  ->  recortes FITS crudos
 #   Entrega a m2, m6: recortes FITS crudos.
 # VERIFICACION: Existe un FITS por exposición de seleccion.json; cada uno cumple contratos/recortes_fits.md.
+# NOTA: SPHEREx no se sirve por SIA sino por DataLink; `url_acceso` es un DataLink
+#       y la descarga pasa por el servicio de recortes (ver issue #2).
 # ESTADO: Esqueleto sin código. Este archivo solo documenta el trabajo pendiente.
 # ============================================================================
 from __future__ import annotations
@@ -18,14 +21,23 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import time
 from pathlib import Path
+from urllib.parse import quote
 
 from modulos.m1_adquisicion.consulta_sia import DIR_DATOS
 
 # Extensiones que exige contratos/recortes_fits.md
 EXTENSIONES_OBLIGATORIAS = ("IMAGE", "FLAGS", "VARIANCE", "ZODI", "PSF", "WCS-WAVE")
+
+# Nombres admitidos por extensión. Los recortes reales de SPHEREx llaman `EPSF`
+# a la PSF; el contrato la nombra `PSF`. Se acepta cualquiera de las dos.
+ALIAS_EXTENSIONES = {"PSF": ("PSF", "EPSF")}
+
+# Servicio de recortes del IRSA: se le pasa la ruta relativa del FITS, no la URL.
+URL_CUTOUT = "https://irsa.ipac.caltech.edu/ibe/cutout"
 
 
 class RecorteInvalido(ValueError):
@@ -38,8 +50,44 @@ def url_recorte(url_acceso: str, ra_grados: float, dec_grados: float, radio_grad
     return f"{base}?center={ra_grados:.8f},{dec_grados:.8f}&size={2 * radio_grados:.6g}"
 
 
-def obtener_bytes(url: str, reintentos: int = 3, espera_s: float = 2.0, timeout_s: float = 300.0) -> bytes:
-    """Descarga una URL con reintentos. Se puede sustituir en pruebas."""
+def es_datalink(url: str) -> bool:
+    """True si la URL es un DataLink del IRSA: el FITS se resuelve en dos pasos."""
+    return "/datalink/links/" in str(url)
+
+
+def ruta_de_datalink(url_datalink: str, obtener) -> str:
+    """Pide el DataLink y devuelve la ruta relativa del FITS científico.
+
+    La respuesta trae varias filas (imagen científica, plantillas de calibración,
+    servicio de recortes). La imagen es la única celda que empieza por `spherex/`
+    y acaba en `.fits`: las demás son URLs o claves de S3.
+    """
+    xml = obtener(url_datalink).decode("utf-8", "replace")
+    for fila in re.findall(r"<TR>(.*?)</TR>", xml, re.S):
+        for celda in re.findall(r"<TD>(.*?)</TD>", fila, re.S):
+            celda = celda.strip()
+            if celda.startswith("spherex/") and celda.endswith(".fits"):
+                return celda
+    raise RecorteInvalido(f"el DataLink no trae la ruta del FITS científico: {url_datalink}")
+
+
+def url_recorte_datalink(url_datalink: str, ra_grados: float, dec_grados: float,
+                         radio_grados: float, obtener) -> str:
+    """URL de recorte para una exposición servida por DataLink."""
+    ruta = ruta_de_datalink(url_datalink, obtener)
+    return (
+        f"{URL_CUTOUT}?path={quote(ruta, safe='')}"
+        f"&center={ra_grados:.8f},{dec_grados:.8f}&size={2 * radio_grados:.6g}"
+    )
+
+
+def obtener_bytes(url: str, reintentos: int = 5, espera_s: float = 3.0, timeout_s: float = 300.0) -> bytes:
+    """Descarga una URL con reintentos y espera creciente. Se puede sustituir en pruebas.
+
+    El servicio de recortes del IRSA devuelve 503 con frecuencia; cinco intentos
+    con espera 3, 6, 12 y 24 s resuelven los fallos pasajeros. Un 503 repetido en
+    todos los intentos suele ser definitivo para ese archivo, no del servicio.
+    """
     import requests
 
     ultimo_error: Exception | None = None
@@ -51,7 +99,7 @@ def obtener_bytes(url: str, reintentos: int = 3, espera_s: float = 2.0, timeout_
         except requests.RequestException as error:
             ultimo_error = error
             if intento < reintentos:
-                time.sleep(espera_s * intento)
+                time.sleep(min(espera_s * 2 ** (intento - 1), 30.0))
     raise RuntimeError(f"No se pudo descargar {url} tras {reintentos} intentos: {ultimo_error}")
 
 
@@ -64,7 +112,11 @@ def extensiones_que_faltan(ruta: Path) -> list[str]:
             presentes = {h.name.upper() for h in hdus}
     except (OSError, ValueError) as error:
         raise RecorteInvalido(f"{ruta.name} no es un FITS legible: {error}") from error
-    return [e for e in EXTENSIONES_OBLIGATORIAS if e not in presentes]
+    return [
+        exigida
+        for exigida in EXTENSIONES_OBLIGATORIAS
+        if not any(nombre in presentes for nombre in ALIAS_EXTENSIONES.get(exigida, (exigida,)))
+    ]
 
 
 def _nombre_seguro(nombre: str) -> str:
@@ -99,10 +151,27 @@ def descargar_campo(campo: str, dir_datos: Path = DIR_DATOS, obtener=obtener_byt
                     continue
             except RecorteInvalido:
                 pass  # archivo anterior corrupto: se vuelve a descargar
-        url = url_recorte(exposicion["url_acceso"], ra, dec, radio)
+        if es_datalink(exposicion["url_acceso"]):
+            construir = lambda r: url_recorte_datalink(exposicion["url_acceso"], ra, dec, r, obtener)
+        else:
+            construir = lambda r: url_recorte(exposicion["url_acceso"], ra, dec, r)
+
         parcial = destino.with_name(destino.name + ".parte")
         try:
-            parcial.write_bytes(obtener(url))
+            contenido = None
+            ultimo_fallo = None
+            # El servicio de recortes falla con 503 según el tamaño pedido: en las
+            # pruebas, 0,4° daba 503 y 0,2° del mismo archivo respondía 200. Se
+            # reintenta con medio lado antes de dar la exposición por perdida.
+            for radio_intento in (radio, radio / 2):
+                try:
+                    contenido = obtener(construir(radio_intento))
+                    break
+                except RuntimeError as error:
+                    ultimo_fallo = error
+            if contenido is None:
+                raise ultimo_fallo
+            parcial.write_bytes(contenido)
             faltan = extensiones_que_faltan(parcial)
             if faltan:
                 raise RecorteInvalido(

@@ -143,6 +143,21 @@ def prueba_url_de_acceso_sin_parametros_de_recorte():
         assert "?" not in e["url_acceso"]
 
 
+def prueba_url_de_acceso_conserva_el_id_del_datalink():
+    # SPHEREx se sirve por DataLink: el identificador viaja en la consulta y no
+    # se puede borrar al quitar los parámetros de recorte.
+    listado = _listado_sintetico()
+    for e in listado["exposiciones"]:
+        e["access_url"] = (
+            "https://irsa.invalid/datalink/links/spherex?ID=ivo://irsa.ipac/spherex_dr1?x/D1"
+            "&center=1,2&size=3"
+        )
+    for e in seleccion_epocas.seleccionar(listado)["exposiciones"]:
+        assert "center=" not in e["url_acceso"]
+        assert "size=" not in e["url_acceso"]
+        assert e["url_acceso"].startswith("https://irsa.invalid/datalink/links/spherex?ID=")
+
+
 def prueba_sin_pareja_valida_se_explica_el_motivo():
     # Solo dos exposiciones separadas 100 días: no hay pareja A-B ni plantilla.
     listado = _listado([_exp("x1", MJD_A, 4), _exp("x2", MJD_A + 100.0, 4)])
@@ -299,6 +314,18 @@ def prueba_un_fits_sin_las_seis_extensiones_se_rechaza(tmp_path):
     with pytest.raises(RuntimeError, match="PSF"):
         descarga_recortes.descargar_campo("campo_sintetico", tmp_path, obtener=obtener_falso)
     assert not any((tmp_path / "campo_sintetico" / "recortes").iterdir())  # no queda ningún archivo inválido
+
+
+def prueba_la_psf_puede_llamarse_epsf(tmp_path):
+    # Los recortes reales de SPHEREx traen EPSF; el contrato la nombra PSF.
+    _preparar_seleccion(tmp_path)
+
+    def obtener_falso(url):
+        return _fits_sintetico(("IMAGE", "FLAGS", "VARIANCE", "ZODI", "EPSF", "WCS-WAVE"))
+
+    rutas = descarga_recortes.descargar_campo("campo_sintetico", tmp_path, obtener=obtener_falso)
+    assert rutas, "con EPSF el recorte debe aceptarse"
+    assert descarga_recortes.extensiones_que_faltan(rutas[0]) == []
 
 
 def prueba_un_archivo_que_no_es_fits_se_rechaza(tmp_path):

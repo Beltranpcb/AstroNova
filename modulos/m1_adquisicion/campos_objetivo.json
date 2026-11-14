@@ -6,10 +6,34 @@
     "lee": "Nada: se edita a mano en la hora 0.",
     "produce": "La lista de campos (campo, nombre, ra_grados, dec_grados, radio_grados) que lee consulta_sia.py.",
     "funcionamiento_previsto": [
-      "Archivo de datos sin lógica: una lista editable que fija los tres campos de la demo."
+      "Cada entrada se consulta por TAP en spherex.obscore.",
+      "El radio es el del recorte que se descarga; 0.2° cubre de sobra el desplazamiento de un objeto del cinturón principal en 24 h.",
+      "Los tres centros tienen cobertura real en spherex_dr1 (comprobado el 2026-11-14)."
     ],
     "verificacion": "Cada entrada tiene los cinco datos; el identificador campo solo usa minúsculas, cifras, guion bajo.",
-    "estado": "Esqueleto sin código. Este archivo solo documenta el trabajo pendiente."
+    "estado": "Campos reales con cobertura confirmada."
   },
-  "campos": []
+  "campos": [
+    {
+      "campo": "sphx_a",
+      "nombre": "Campo A (RA 160.6, Dec 30.7)",
+      "ra_grados": 160.617,
+      "dec_grados": 30.67,
+      "radio_grados": 0.2
+    },
+    {
+      "campo": "sphx_b",
+      "nombre": "Campo B (RA 250.0, Dec -30.0)",
+      "ra_grados": 250.0,
+      "dec_grados": -30.0,
+      "radio_grados": 0.2
+    },
+    {
+      "campo": "sphx_c",
+      "nombre": "Campo C (RA 80.0, Dec 40.0)",
+      "ra_grados": 80.0,
+      "dec_grados": 40.0,
+      "radio_grados": 0.2
+    }
+  ]
 }

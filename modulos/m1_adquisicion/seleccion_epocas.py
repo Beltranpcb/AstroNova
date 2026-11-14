@@ -21,6 +21,7 @@ import json
 import sys
 from collections import defaultdict
 from pathlib import Path
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from modulos.m1_adquisicion.consulta_sia import DIR_DATOS
 
@@ -43,10 +44,10 @@ def _dias(horas: float) -> float:
     return horas / 24.0
 
 
-def _mejor_plantilla(exposiciones_detector: list[dict], a: dict, b: dict) -> dict | None:
-    """La exposición del mismo detector más cercana a 180 días de A, que diste más de 120 días de A y de B."""
+def _mejor_plantilla(exposiciones: list[dict], a: dict, b: dict) -> dict | None:
+    """La exposición más cercana a 180 días de A, que diste más de 120 días de A y de B."""
     mejor, mejor_puntuacion = None, None
-    for p in exposiciones_detector:
+    for p in exposiciones:
         d_a = abs(p["t_min"] - a["t_min"])
         d_b = abs(p["t_min"] - b["t_min"])
         if d_a <= PLANTILLA_MIN_DIAS or d_b <= PLANTILLA_MIN_DIAS:
@@ -58,7 +59,16 @@ def _mejor_plantilla(exposiciones_detector: list[dict], a: dict, b: dict) -> dic
 
 
 def elegir_trio(exposiciones: list[dict]) -> tuple[dict, dict, dict]:
-    """Devuelve (época A, época B, plantilla), las tres del mismo detector."""
+    """Devuelve (época A, época B, plantilla).
+
+    A y B son siempre del mismo detector. La plantilla se busca primero en ese
+    detector; si esa pasada no tiene ninguna exposición a más de 120 días —lo
+    habitual en DR1, donde un campo se visita una vez cada seis meses y no
+    siempre con el mismo detector— se acepta la de otro detector. La plantilla
+    solo sirve para identificar las estrellas fijas, así que sirve igual; quien
+    lea `seleccion.json` puede verlo comparando el campo `detector` de cada
+    exposición.
+    """
     por_detector: dict[int, list[dict]] = defaultdict(list)
     for e in exposiciones:
         por_detector[e["detector"]].append(e)
@@ -66,6 +76,7 @@ def elegir_trio(exposiciones: list[dict]) -> tuple[dict, dict, dict]:
     candidatos = []
     for detector, lista in por_detector.items():
         lista.sort(key=lambda e: e["t_min"])
+        otros = [e for e in exposiciones if e["detector"] != detector]
         for i, a in enumerate(lista):
             for b in lista[i + 1:]:
                 separacion_h = (b["t_min"] - a["t_min"]) * 24.0
@@ -73,7 +84,7 @@ def elegir_trio(exposiciones: list[dict]) -> tuple[dict, dict, dict]:
                     break  # la lista está ordenada: el resto queda aún más lejos
                 if separacion_h < SEPARACION_MIN_H:
                     continue
-                plantilla = _mejor_plantilla(lista, a, b)
+                plantilla = _mejor_plantilla(lista, a, b) or _mejor_plantilla(otros, a, b)
                 if plantilla is None:
                     continue
                 puntuacion = (
@@ -94,7 +105,9 @@ def _diagnostico(por_detector: dict[int, list[dict]]) -> str:
     """Explica por qué no hay trío, detector a detector, para decidir si hay que cambiar de campo."""
     lineas = [
         "Ningún detector tiene una pareja A-B "
-        f"({SEPARACION_MIN_H} a {SEPARACION_MAX_H} h) con una plantilla a más de {PLANTILLA_MIN_DIAS:.0f} días."
+        f"({SEPARACION_MIN_H} a {SEPARACION_MAX_H} h)"
+        f" con una plantilla a más de {PLANTILLA_MIN_DIAS:.0f} días de A y de B"
+        " (la plantilla puede ser de otro detector)."
     ]
     for detector in sorted(por_detector):
         tiempos = sorted(e["t_min"] for e in por_detector[detector])
@@ -105,6 +118,21 @@ def _diagnostico(por_detector: dict[int, list[dict]]) -> str:
     return "\n".join(lineas)
 
 
+def _sin_parametros_de_recorte(url: str) -> str:
+    """Quita `center` y `size` de la URL, y conserva el resto de la consulta.
+
+    Las exposiciones de SPHEREx son DataLink (`.../links/spherex?ID=...`): si se
+    borrara la consulta entera, la exposición dejaría de identificarse.
+    """
+    partes = urlsplit(url)
+    consulta = [
+        (clave, valor)
+        for clave, valor in parse_qsl(partes.query, keep_blank_values=True)
+        if clave.lower() not in {"center", "size"}
+    ]
+    return urlunsplit((partes.scheme, partes.netloc, partes.path, urlencode(consulta), ""))
+
+
 def _entrada(exposicion: dict, papel: str) -> dict:
     return {
         "id_exposicion": exposicion["identificador"],
@@ -112,7 +140,7 @@ def _entrada(exposicion: dict, papel: str) -> dict:
         "mjd": exposicion["t_min"],
         "detector": exposicion["detector"],
         "coleccion": exposicion["coleccion"],
-        "url_acceso": exposicion["access_url"].split("?")[0],  # sin parámetros de recorte
+        "url_acceso": _sin_parametros_de_recorte(exposicion["access_url"]),
         "archivo_recorte": f"{exposicion['identificador']}.fits",
     }
 
