@@ -196,7 +196,7 @@ def fila_tap_a_sia(fila: dict) -> dict | None:
 
 
 def consultar_tap(ra: float, dec: float, radio: float, coleccion: str,
-                  reintentos: int = 3, espera_s: float = 2.0, timeout_s: float = 120.0) -> list[dict]:
+                  reintentos: int = 2, espera_s: float = 2.0, timeout_s: float = 30.0) -> list[dict]:
     """Pide a IRSA por TAP las exposiciones de una colección que cubren el círculo (grados)."""
     import requests
 
