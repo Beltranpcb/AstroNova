@@ -188,6 +188,7 @@ def espectro(cand: dict, mjd: float) -> dict | None:
 
     return {
         "id_pareja": cand["id"],
+        "origen": "sintetico",
         "agrupacion": "banda",
         "puntos": puntos,
         "tipo": tipo,
@@ -207,6 +208,7 @@ def construir(campo: dict) -> tuple[dict, dict, dict]:
     meta = {
         "_comentario": "Datos de demostración generados por m9_sitio/ejemplos/generar_datos.py.",
         "version_contrato": VERSION_CONTRATO,
+        "origen": "sintetico",
         "campo": campo["campo"],
         "nombre": campo["nombre"],
         "centro": campo["centro"],

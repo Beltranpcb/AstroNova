@@ -53,6 +53,12 @@
     });
   }
 
+  /** Lee un JSON publicado (ruta relativa a datos/m7_publicacion). Solo lectura. */
+  HX.leerDatos = async function (rutaRelativa) {
+    const base = await resolverBase();
+    return leerJson(`${base}/${rutaRelativa}`);
+  };
+
   HX.cargarIndice = async function () {
     const base = await resolverBase();
     const documento = await leerJson(`${base}/campos.json`);
