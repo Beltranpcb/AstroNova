@@ -38,6 +38,7 @@ Dejar en un único directorio los datos que la web lee.
 | `union_candidatos.py` | Une los resultados de cada pareja en candidatos.json. |
 | `copia_publicable.py` | Copia al directorio publicado los archivos que la web lee sin cambios. |
 | `indice_campos.py` | Escribe campos.json con la lista de campos publicados. |
+| `indice_catalogo.py` | Escribe catalogo.json: objetos publicados, datos disponibles, misma clasificación y espectros similares. |
 | `control_publicacion.py` | Rechaza la publicación cuando un archivo incumple su contrato. |
 | `pruebas/prueba_publicacion.py` | Comprueba la unión sobre los ejemplos de los contratos. |
 | `pytest.ini` | Recoge las pruebas `prueba_*.py` sin depender de la raíz. |

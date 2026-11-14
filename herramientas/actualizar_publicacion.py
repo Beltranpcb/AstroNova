@@ -63,6 +63,7 @@ PASOS = [
     ("m7_publicacion", "union_candidatos", True),
     ("m7_publicacion", "copia_publicable", True),
     ("m7_publicacion", "indice_campos", False),
+    ("m7_publicacion", "indice_catalogo", False),
     ("m7_publicacion", "control_publicacion", True),
 ]
 

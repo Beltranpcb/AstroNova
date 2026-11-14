@@ -64,3 +64,14 @@ Servir el repositorio desde la raíz y abrir
 - [ ] «Plantillas (objeto A)» dibuja las cuatro curvas con estilos distintos, desactiva B y muestra la tabla de χ² con grados de libertad.
 - [ ] El texto dice «más compatible con la plantilla … entre las evaluadas», nunca «es un …».
 - [ ] «Identificar» dice que está pendiente.
+
+## Análisis de objetos · Catálogo
+
+- [ ] Es la pestaña que se abre primero; la cuenta dice «N de N objetos».
+- [ ] Buscar «slipher» deja solo a (1766) Slipher; «atlas/p00» busca por identificador.
+- [ ] Los filtros de clase, identificación y «Solo con espectro» se combinan.
+- [ ] La ficha muestra la clasificación con su fuente; un objeto sin clase dice «Sin clase catalogada».
+- [ ] Un objeto sin identificar avisa de que no equivale a un descubrimiento.
+- [ ] Sin espectro no se dibuja ninguna curva y lo dice.
+- [ ] «Misma clasificación» y «Espectros más similares» son listas distintas; los similares muestran χ²ᵣ, intervalo y puntos.
+- [ ] «Comparar» abre el comparador con A y B; «Ver en el explorador» abre el campo con el candidato elegido.

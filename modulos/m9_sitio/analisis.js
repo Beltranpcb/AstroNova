@@ -2,9 +2,9 @@
    ARCHIVO: modulos/m9_sitio/analisis.js
    MODULO: m9_sitio (Lote D)
    ROL: Gestiona la sección «Análisis de objetos»: el cambio entre el explorador
-        y el análisis, y las pestañas Identificar y Comparar espectros.
+        y el análisis, y las pestañas Catálogo, Identificar y Comparar espectros.
    LEE: Nada.
-   PRODUCE: HX.mostrarVista(nombre) y HX.mostrarPestana(nombre); avisa a
+   PRODUCE: HX.mostrarVista(nombre), HX.mostrarPestana(nombre) y HX.verEnExplorador(); avisa a
             HX.alAbrirPestana[] cuando se abre una pestaña.
    VERIFICACION: Pulsar «Análisis de objetos» oculta el visor y la tabla y
                  muestra las pestañas; «Explorador» los devuelve.
@@ -16,7 +16,7 @@
   HX.alAbrirPestana = [];
 
   const VISTAS = ["explorador", "analisis"];
-  const PESTANAS = ["identificar", "comparar"];
+  const PESTANAS = ["catalogo", "identificar", "comparar"];
 
   function mostrarVista(nombre) {
     if (!VISTAS.includes(nombre)) return;
@@ -35,7 +35,7 @@
       boton.classList.toggle("activo", v === nombre);
       boton.setAttribute("aria-current", v === nombre ? "page" : "false");
     }
-    if (!explorador) mostrarPestana(HX.pestanaActual || "comparar");
+    if (!explorador) mostrarPestana(HX.pestanaActual || "catalogo");
   }
 
   function mostrarPestana(nombre) {
@@ -54,6 +54,13 @@
   }
 
   HX.mostrarVista = mostrarVista;
+
+  /** Abre el explorador con el campo cargado y el candidato seleccionado. */
+  HX.verEnExplorador = async function (campo, idCandidato) {
+    mostrarVista("explorador");
+    if (HX.estado.campo !== campo) await HX.cargarCampo(campo);
+    HX.seleccionar(idCandidato, true);
+  };
   HX.mostrarPestana = mostrarPestana;
 
   function iniciar() {

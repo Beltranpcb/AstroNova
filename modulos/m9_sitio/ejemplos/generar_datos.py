@@ -121,6 +121,8 @@ CAMPOS = [
 ]
 
 PLANTILLAS = ["asteroide_rocoso", "asteroide_oscuro", "cometa", "enana_marron"]
+# Clase catalogada de demostración, solo para objetos «conocidos» (en el pipeline real la da m5).
+CLASE_DEMO = {"asteroide_rocoso": "asteroide", "asteroide_oscuro": "asteroide", "cometa": "cometa", "enana_marron": "enana_marron"}
 
 
 def flujo(tipo: str, lam: float) -> float:
@@ -287,6 +289,7 @@ def construir(campo: dict) -> tuple[dict, dict, dict]:
             "tiene_espectro": esp is not None,
             "tipo": cand["tipo"],
             "temperatura_k": esp["temperatura_k"] if esp else None,
+            "clase_objeto": CLASE_DEMO.get(cand["tipo"]) if cand["estado"] == "conocido" else None,
         })
 
     candidatos_doc = {
