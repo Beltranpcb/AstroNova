@@ -65,6 +65,10 @@ Criterio de aceptación: el comando termina con código 0 solo si se cumple todo
 2. El campos.json generado desde los ejemplos coincide con modulos/m7_publicacion/ejemplos/campos.json.
 3. Un JSON de entrada que incumple su esquema hace que control_publicacion termine con código distinto de cero.
 4. Un archivo de 2 MB en el directorio publicado hace que control_publicacion termine con código distinto de cero.
+5. Un PNG que no mide 600 x 600 hace que control_publicacion termine con código distinto de cero.
+6. Publicar dos campos a la vez escribe las dos entradas en campos.json con su recuento correcto.
+7. Un campo donde todas las parejas son estacionarias publica una lista vacía de candidatos y pasa el control.
+8. Un meta.json o un candidatos.json incompleto hace que indice_campos falle con un mensaje que nombra el archivo y la clave que falta.
 
 La verificación no ejecuta ningún otro módulo: usa datos sintéticos o los ejemplos de `modulos/m7_publicacion/ejemplos/`.
 
@@ -75,7 +79,9 @@ La verificación no ejecuta ningún otro módulo: usa datos sintéticos o los ej
 ## Estado
 
 Implementado. Los cuatro comandos de arriba se ejecutan en ese orden y la
-verificación pasa: 13 pruebas en verde con `python -m pytest
+verificación pasa: 19 pruebas en verde con `python -m pytest
 modulos/m7_publicacion/pruebas -q`. La unión solo necesita la biblioteca
 estándar; `control_publicacion.py` usa `jsonschema` para leer los esquemas de
-`esquemas/` (o `contratos/` si el árbol completo está presente).
+`esquemas/` (o `contratos/` si el árbol completo está presente) y lee la
+cabecera de los PNG con `struct` para comprobar que miden 600 x 600,
+sin depender de ninguna biblioteca de imagen.

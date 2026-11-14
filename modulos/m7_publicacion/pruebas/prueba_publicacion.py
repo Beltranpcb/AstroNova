@@ -23,6 +23,7 @@ import hashlib
 import json
 import os
 import shutil
+import struct
 import subprocess
 import sys
 from pathlib import Path
@@ -51,7 +52,17 @@ TABLAS_DE_ENTRADA = (
     ("m6_huella_espectral", "espectros.json"),
 )
 
-PNG_DE_EJEMPLO = b"\x89PNG\r\n\x1a\n" + b"m7_publicacion_prueba" * 4
+def png_de_prueba(ancho=600, alto=600):
+    """Devuelve una cabecera PNG válida con el tamaño pedido.
+
+    Solo la firma y el bloque IHDR: basta para que control_publicacion mida el
+    tamaño, y evita depender de una biblioteca de imagen en las pruebas.
+    """
+    ihdr = struct.pack(">II", ancho, alto) + b"\x08\x02\x00\x00\x00"
+    return b"\x89PNG\r\n\x1a\n" + struct.pack(">I", 13) + b"IHDR" + ihdr + b"\x00\x00\x00\x00"
+
+
+PNG_DE_EJEMPLO = png_de_prueba()
 
 
 def leer_json(ruta):
@@ -226,6 +237,7 @@ def prueba_control_sale_con_codigo_cero_por_linea_de_ordenes(publicado, tmp_path
     Se ejecuta desde un directorio ajeno al repositorio y sin `contratos/`:
     el control debe encontrar por sí solo los esquemas que viajan con el módulo.
     """
+
     entorno = dict(os.environ)
     entorno["PYTHONPATH"] = str(RAIZ)
     proceso = subprocess.run(
@@ -237,3 +249,88 @@ def prueba_control_sale_con_codigo_cero_por_linea_de_ordenes(publicado, tmp_path
     )
     assert proceso.returncode == 0, proceso.stdout + proceso.stderr
     assert "Publicación válida" in proceso.stdout
+
+
+def prueba_control_rechaza_un_png_que_no_mide_600(publicado):
+    (publicado / "m7_publicacion" / CAMPO / "epoca_a.png").write_bytes(png_de_prueba(10, 10))
+
+    problemas = validar(str(publicado), str(CONTRATOS))
+    assert any("mide 10 x 10" in problema for problema in problemas)
+
+
+def prueba_union_avisa_del_modulo_que_falta(raiz_datos):
+    (raiz_datos / "m4_movimiento" / CAMPO / "movimiento.json").unlink()
+
+    with pytest.raises(FileNotFoundError) as error:
+        unir_campo(CAMPO, str(raiz_datos))
+    assert "m4_movimiento" in str(error.value)
+
+
+def prueba_publica_dos_campos(raiz_datos):
+    """Dos campos en la misma publicación: el índice tiene que listar los dos."""
+    otro = "campo_dos"
+    for directorio, archivo in TABLAS_DE_ENTRADA:
+        contenido = leer_json(raiz_datos / directorio / CAMPO / archivo)
+        contenido["campo"] = otro
+        destino = raiz_datos / directorio / otro / archivo
+        destino.parent.mkdir(parents=True, exist_ok=True)
+        escribir_json(destino, contenido)
+    for nombre in ("epoca_a.png", "epoca_b.png", "diferencia.png"):
+        shutil.copyfile(
+            raiz_datos / "m2_alineacion" / CAMPO / nombre,
+            raiz_datos / "m2_alineacion" / otro / nombre,
+        )
+
+    for campo in (CAMPO, otro):
+        copiar_campo(campo, str(raiz_datos))
+        unir_campo(campo, str(raiz_datos))
+    escribir_campos(str(raiz_datos))
+
+    indice = leer_json(raiz_datos / "m7_publicacion" / "campos.json")
+    assert [entrada["campo"] for entrada in indice["campos"]] == [otro, CAMPO]
+    assert [entrada["numero_candidatos"] for entrada in indice["campos"]] == [2, 2]
+    assert validar(str(raiz_datos), str(CONTRATOS)) == []
+
+
+def prueba_sin_movimiento_publica_cero_candidatos(raiz_datos):
+    """Si todas las parejas son estacionarias, el campo publica una lista vacía."""
+    ruta = raiz_datos / "m4_movimiento" / CAMPO / "movimiento.json"
+    movimiento = leer_json(ruta)
+    for pareja in movimiento["parejas"]:
+        pareja["clase"] = "estacionaria"
+    escribir_json(ruta, movimiento)
+
+    copiar_campo(CAMPO, str(raiz_datos))
+    unir_campo(CAMPO, str(raiz_datos))
+    escribir_campos(str(raiz_datos))
+
+    candidatos = leer_json(raiz_datos / "m7_publicacion" / CAMPO / "candidatos.json")
+    assert candidatos["candidatos"] == []
+
+    indice = leer_json(raiz_datos / "m7_publicacion" / "campos.json")
+    assert indice["campos"][0]["numero_candidatos"] == 0
+
+    assert validar(str(raiz_datos), str(CONTRATOS)) == []
+
+
+def prueba_indice_avisa_si_el_meta_esta_incompleto(publicado):
+    """Un meta.json a medio escribir debe nombrar el archivo, no dar KeyError."""
+    ruta = publicado / "m7_publicacion" / CAMPO / "meta.json"
+    meta = leer_json(ruta)
+    meta.pop("nombre")
+    escribir_json(ruta, meta)
+
+    with pytest.raises(ValueError) as error:
+        escribir_campos(str(publicado))
+    assert "meta.json" in str(error.value)
+    assert "nombre" in str(error.value)
+
+
+def prueba_indice_avisa_si_el_candidatos_esta_incompleto(publicado):
+    ruta = publicado / "m7_publicacion" / CAMPO / "candidatos.json"
+    escribir_json(ruta, {"version_contrato": "1", "campo": CAMPO})
+
+    with pytest.raises(ValueError) as error:
+        escribir_campos(str(publicado))
+    assert "candidatos.json" in str(error.value)
+    assert "candidatos" in str(error.value)

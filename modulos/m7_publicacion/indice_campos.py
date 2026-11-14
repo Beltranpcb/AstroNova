@@ -10,7 +10,8 @@
 #   2. Contar los candidatos de cada uno  ->  campos.json
 #   Entrega a control_publicacion.py, m9: campos.json.
 # VERIFICACION: El archivo valida contra contratos/campos.schema.json;
-#   numero_candidatos coincide con el recuento real.
+#   numero_candidatos coincide con el recuento real; un meta.json o un
+#   candidatos.json incompleto se rechaza con un mensaje que nombra el archivo.
 # USO: python -m modulos.m7_publicacion.indice_campos
 # ============================================================================
 """Escribe el índice campos.json a partir de los directorios ya publicados.
@@ -38,6 +39,37 @@ def leer_json(ruta):
         return json.load(archivo)
 
 
+def leer_campo(directorio):
+    """Devuelve (nombre, número de candidatos) de un campo ya publicado.
+
+    Un archivo a medio escribir no debe reventar con un KeyError: se avisa de
+    qué archivo falta qué clave, para que se pueda volver a lanzar el módulo
+    que lo genera.
+    """
+    ruta_meta = directorio / "meta.json"
+    ruta_candidatos = directorio / "candidatos.json"
+
+    try:
+        meta = leer_json(ruta_meta)
+    except json.JSONDecodeError as error:
+        raise ValueError("%s: JSON ilegible (%s)" % (ruta_meta, error.msg)) from error
+    if "nombre" not in meta:
+        raise ValueError(
+            "%s: falta la clave 'nombre' (¿se escribió a medias?)" % ruta_meta
+        )
+
+    try:
+        candidatos = leer_json(ruta_candidatos)
+    except json.JSONDecodeError as error:
+        raise ValueError("%s: JSON ilegible (%s)" % (ruta_candidatos, error.msg)) from error
+    if "candidatos" not in candidatos:
+        raise ValueError(
+            "%s: falta la clave 'candidatos' (¿se escribió a medias?)" % ruta_candidatos
+        )
+
+    return meta["nombre"], len(candidatos["candidatos"])
+
+
 def construir_campos(raiz_datos=RAIZ_DATOS_POR_DEFECTO):
     """Devuelve el contenido de campos.json según contratos/campos.schema.json."""
     base = Path(raiz_datos) / "m7_publicacion"
@@ -46,19 +78,16 @@ def construir_campos(raiz_datos=RAIZ_DATOS_POR_DEFECTO):
 
     campos = []
     for directorio in sorted(ruta for ruta in base.iterdir() if ruta.is_dir()):
-        ruta_meta = directorio / "meta.json"
-        ruta_candidatos = directorio / "candidatos.json"
-        if not (ruta_meta.is_file() and ruta_candidatos.is_file()):
+        if not ((directorio / "meta.json").is_file() and (directorio / "candidatos.json").is_file()):
             continue
 
-        meta = leer_json(ruta_meta)
-        candidatos = leer_json(ruta_candidatos)
+        nombre, numero_candidatos = leer_campo(directorio)
         campos.append(
             {
                 "campo": directorio.name,
-                "nombre": meta["nombre"],
+                "nombre": nombre,
                 "ruta": directorio.name,
-                "numero_candidatos": len(candidatos["candidatos"]),
+                "numero_candidatos": numero_candidatos,
             }
         )
 
