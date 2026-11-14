@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "contratos/espectros.schema.json",
   "title": "espectros.json: huella espectral de cada pareja candidata",
-  "$comment": "ARCHIVO: contratos/espectros.schema.json. ROL: fija la forma de espectros.json: huella espectral de cada pareja candidata. PRODUCTOR: m6_huella_espectral/escritura_espectros.py. CONSUMIDORES: m7_publicacion, m9_sitio. RUTA REAL: datos/m6_huella_espectral/<campo>/espectros.json, copiado a datos/m7_publicacion/<campo>/espectros.json. VERIFICACION: check-jsonschema --schemafile contratos/espectros.schema.json <archivo>. No contiene lógica: solo describe datos. AMPLIACION COMPATIBLE (version_contrato 1): origen, advertencias, calidad, composicion y, en ajustes_plantilla, grados_libertad, n_puntos, origen_plantilla, referencia_plantilla; todos opcionales.",
+  "$comment": "ARCHIVO: contratos/espectros.schema.json. ROL: fija la forma de espectros.json: huella espectral de cada pareja candidata. PRODUCTOR: m6_huella_espectral/escritura_espectros.py. CONSUMIDORES: m7_publicacion, m9_sitio. RUTA REAL: datos/m6_huella_espectral/<campo>/espectros.json, copiado a datos/m7_publicacion/<campo>/espectros.json. VERIFICACION: check-jsonschema --schemafile contratos/espectros.schema.json <archivo>. No contiene lógica: solo describe datos. AMPLIACION COMPATIBLE (version_contrato 1): origen, advertencias, calidad, composicion y, en ajustes_plantilla, grados_libertad, n_puntos, origen_plantilla, referencia_plantilla; todos opcionales. Tambien opcional: escala en ajustes_plantilla.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -154,6 +154,11 @@
                     "null"
                   ],
                   "description": "Cita de la plantilla; nula si es sintética."
+                },
+                "escala": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "description": "Factor que multiplica la curva normalizada de la plantilla para ajustarla al espectro medido, en mJy. Permite dibujar la plantilla sobre el espectro sin recalcular el ajuste."
                 }
               }
             }
