@@ -16,6 +16,8 @@
     {
       "tipo": "asteroide_rocoso",
       "etiqueta_publica": "Roca con silicatos",
+      "origen_plantilla": "sintetica",
+      "referencia": null,
       "rasgos": "Pendiente roja; absorción en torno a 1 y 2 micras.",
       "longitud_onda_micras": [
         0.75,
@@ -205,6 +207,8 @@
     {
       "tipo": "asteroide_oscuro",
       "etiqueta_publica": "Roca primitiva con agua",
+      "origen_plantilla": "sintetica",
+      "referencia": null,
       "rasgos": "Espectro plano; posible banda de hidratación en torno a 3 micras.",
       "longitud_onda_micras": [
         0.75,
@@ -394,6 +398,8 @@
     {
       "tipo": "cometa",
       "etiqueta_publica": "Bola de hielo activa",
+      "origen_plantilla": "sintetica",
+      "referencia": null,
       "rasgos": "Hielo de agua entre 2,7 y 3 micras; emisión de CO2 en 4,26 micras; CO en 4,67 micras.",
       "longitud_onda_micras": [
         0.75,
@@ -583,6 +589,8 @@
     {
       "tipo": "enana_marron",
       "etiqueta_publica": "Objeto frío, casi un planeta",
+      "origen_plantilla": "sintetica",
+      "referencia": null,
       "rasgos": "Absorción de agua en 1,4 micras; metano en 3,3 micras.",
       "longitud_onda_micras": [
         0.75,

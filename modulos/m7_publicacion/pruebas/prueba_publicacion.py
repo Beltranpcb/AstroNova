@@ -334,3 +334,12 @@ def prueba_indice_avisa_si_el_candidatos_esta_incompleto(publicado):
         escribir_campos(str(publicado))
     assert "candidatos.json" in str(error.value)
     assert "candidatos" in str(error.value)
+
+
+def prueba_copia_plantillas_si_existen_y_no_falla_si_faltan(raiz_datos):
+    copiar_campo(CAMPO, str(raiz_datos))
+    assert not (raiz_datos / "m7_publicacion" / "plantillas.json").exists()  # opcional: sin origen no se crea
+    origen = raiz_datos / "m6_huella_espectral" / "plantillas.json"
+    shutil.copyfile(EJEMPLOS / "plantillas.json", origen)
+    copiar_campo(CAMPO, str(raiz_datos))
+    assert resumen(raiz_datos / "m7_publicacion" / "plantillas.json") == resumen(origen)

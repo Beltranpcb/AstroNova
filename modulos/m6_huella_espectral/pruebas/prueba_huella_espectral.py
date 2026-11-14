@@ -404,3 +404,74 @@ def prueba_la_longitud_de_onda_sale_de_la_rejilla_dispersa():
 
     onda2 = fotometria.longitud_de_onda(hdul, 100.0, 50.0)
     assert onda2 == pytest.approx(4.4 + 0.6 * ((100 + 855) / 2040.0), abs=0.01)
+
+
+# ----------------------------------- chi2 con grados de libertad y advertencias
+ESQUEMA_PLANTILLAS = json.loads(_ruta_esquema("plantillas.schema.json").read_text(encoding="utf-8"))
+
+
+def _espectro_de_cometa(n=8):
+    lam = np.linspace(1.5, 4.9, n)
+    flujo = 1.0 + 2.5 * np.exp(-0.5 * ((lam - 4.26) / 0.06) ** 2) + 0.2 * (lam - 1.5)
+    return _puntos_sinteticos(lam, flujo, 0.02 * flujo)
+
+
+def prueba_cada_ajuste_declara_grados_de_libertad_y_puntos():
+    puntos = _espectro_de_cometa(8)
+    resultado = comparacion_plantillas.comparar(puntos)
+    assert len(resultado["ajustes"]) == 4
+    for ajuste in resultado["ajustes"]:
+        assert ajuste["n_puntos"] == 8
+        assert ajuste["grados_libertad"] == 7  # N menos la escala ajustada
+        assert ajuste["origen_plantilla"] == "sintetica" and ajuste["referencia_plantilla"] is None
+    assert any(a["escala"] > 0 for a in resultado["ajustes"])
+
+
+def prueba_con_un_solo_punto_no_se_inventa_el_chi2():
+    resultado = comparacion_plantillas.comparar(_puntos_sinteticos([2.0], [1.0], [0.1]))
+    assert resultado["ajustes"] == [] and resultado["tipo"] == "indeterminado"
+
+
+def prueba_las_advertencias_reflejan_la_calidad_y_el_tipo():
+    resultado = comparacion_plantillas.comparar(_espectro_de_cometa(8))
+    assert "plantillas_sinteticas" in resultado["advertencias"]
+    if resultado["tipo"] == "cometa":
+        assert "luz_reflejada_y_termica" in resultado["advertencias"]
+    corto = comparacion_plantillas.comparar(_puntos_sinteticos([1.0, 1.5, 2.0], [1.0, 1.1, 1.2], [0.5, 0.5, 0.5]), agrupacion="detector")
+    assert {"senal_ruido_baja", "cobertura_espectral_parcial", "agrupado_por_detector"} <= set(corto["advertencias"])
+
+
+def prueba_planck_avisa_si_el_pico_de_wien_cae_fuera_de_rango(tmp_path):
+    directorio = tmp_path / "m6_huella_espectral" / "campo_prueba"
+    directorio.mkdir(parents=True)
+    lam = np.array([2.42, 3.12, 3.83, 4.41, 4.71, 5.00])
+    flujo = _planck_de_la_prueba(lam, 200.0)  # pico de Wien en 14,5 micras
+    flujo = 2.0 * flujo / flujo.max()
+    (directorio / "espectro_medido.json").write_text(json.dumps({
+        "campo": "campo_prueba",
+        "espectros": [{"id_pareja": "p001", "agrupacion": "banda", "puntos": _puntos_sinteticos(lam, flujo, 0.01 * flujo)}]}), encoding="utf-8")
+    ruta = ajuste_planck.ajustar_campo("campo_prueba", raiz_datos=tmp_path)
+    espectro = json.loads(ruta.read_text(encoding="utf-8"))["espectros"][0]
+    if espectro["temperatura_k"] is not None:
+        assert espectro["pico_wien_micras"] > 5.0
+        assert espectro["advertencias"] == ["cuerpo_negro_fuera_de_rango"]
+
+
+def prueba_espectros_json_trae_calidad_advertencias_y_plantillas_publicadas(tmp_path):
+    directorio = tmp_path / "m6_huella_espectral" / "campo_prueba"
+    directorio.mkdir(parents=True)
+    puntos = _espectro_de_cometa(8)
+    (directorio / "espectro_medido.json").write_text(json.dumps({
+        "campo": "campo_prueba", "espectros": [{"id_pareja": "p001", "agrupacion": "banda", "puntos": puntos}]}), encoding="utf-8")
+    comparacion_plantillas.clasificar_campo("campo_prueba", raiz_datos=tmp_path)
+    ajuste_planck.ajustar_campo("campo_prueba", raiz_datos=tmp_path)
+    datos = json.loads(escritura_espectros.escribir_campo("campo_prueba", raiz_datos=tmp_path).read_text(encoding="utf-8"))
+    jsonschema.Draft202012Validator(ESQUEMA_ESPECTROS).validate(datos)
+    espectro = datos["espectros"][0]
+    assert espectro["calidad"]["n_puntos"] == 8
+    assert espectro["calidad"]["cobertura_micras"] == [1.5, 4.9]
+    assert "plantillas_sinteticas" in espectro["advertencias"]
+    publicadas = json.loads((tmp_path / "m6_huella_espectral" / "plantillas.json").read_text(encoding="utf-8"))
+    jsonschema.Draft202012Validator(ESQUEMA_PLANTILLAS).validate(publicadas)
+    assert {p["tipo"] for p in publicadas["plantillas"]} == {"asteroide_rocoso", "asteroide_oscuro", "cometa", "enana_marron"}
+    assert all(p["origen_plantilla"] == "sintetica" for p in publicadas["plantillas"])

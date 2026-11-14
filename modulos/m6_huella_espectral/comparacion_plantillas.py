@@ -8,12 +8,15 @@
 #   Recibe de fotometria.py: espectro_medido.json.
 #   1. Leer las cuatro curvas de plantillas.json  ->  plantillas remuestreadas
 #   2. Escalar cada plantilla por mínimos cuadrados  ->  chi cuadrado reducido por tipo
-#   3. Elegir el menor  ->  tipo_espectral.json
+#   3. Elegir el menor  ->  tipo_espectral.json (con grados de libertad, nº de puntos y avisos)
 #   Entrega a escritura_espectros.py: tipo_espectral.json.
 # VERIFICACION: Cada objeto recibe un chi cuadrado reducido por plantilla; el tipo es el del
 #   menor, o indeterminado si ninguno baja del umbral.
 # USO: python -m modulos.m6_huella_espectral.comparacion_plantillas <campo>
-# NOTA: La escala queda libre porque una plantilla normalizada no predice el brillo; solo se
+# NOTA: El chi cuadrado reducido es chi2 / (N - 1): N puntos y una escala libre. Con menos de
+#   dos puntos no se calcula (no hay grados de libertad) y no se inventa. La suma es diagonal:
+#   no modela correlaciones entre canales ni errores sistemáticos. El tipo es el de la plantilla
+#   más compatible entre las evaluadas, no un diagnóstico. La escala queda libre porque una plantilla normalizada no predice el brillo; solo se
 #   compara la forma. Un tipo se acepta si su chi cuadrado reducido baja de UMBRAL_CHI2, su
 #   escala es significativa y el flujo medido se separa del cero.
 # ============================================================================
@@ -75,6 +78,8 @@ def cargar_plantillas(ruta=RUTA_PLANTILLAS):
                 "etiqueta_publica": plantilla.get("etiqueta_publica", plantilla["tipo"]),
                 "onda": onda,
                 "flujo": flujo,
+                "origen_plantilla": plantilla.get("origen_plantilla", "sintetica"),
+                "referencia": plantilla.get("referencia"),
             }
         )
     return plantillas
@@ -113,20 +118,65 @@ def ajustar_plantilla(puntos, plantilla):
         return None
     escala = float(np.sum(pesos * modelo * flujo) / denominador)
     error_escala = float(1.0 / np.sqrt(denominador))
+    grados_libertad = len(puntos) - 1  # N puntos menos la escala ajustada
+    if grados_libertad < 1:
+        return None
     chi2 = float(np.sum(((flujo - escala * modelo) / error) ** 2))
     return {
         "tipo": plantilla["tipo"],
-        "chi2_reducido": round(chi2 / max(1, len(puntos) - 1), 4),
+        "chi2_reducido": round(chi2 / grados_libertad, 4),
+        "grados_libertad": grados_libertad,
+        "n_puntos": len(puntos),
         "escala": escala,
         "significancia_escala": escala / error_escala if error_escala > 0 else 0.0,
+        "origen_plantilla": plantilla.get("origen_plantilla", "sintetica"),
+        "referencia_plantilla": plantilla.get("referencia"),
     }
 
 
-def comparar(puntos, plantillas=None):
-    """Ajusta las cuatro plantillas y devuelve el tipo elegido con sus chi cuadrados."""
+SNR_BAJA = 5.0
+COBERTURA_MINIMA = 0.8  # fracción de 0,75-5,0 micras
+TIPOS_CON_LUZ_REFLEJADA = ("asteroide_rocoso", "asteroide_oscuro", "cometa")
+
+
+def advertencias_de(puntos, agrupacion, ajustes, tipo):
+    """Códigos de advertencia del contrato espectros.schema.json para este espectro."""
+    avisos = []
+    if any(a["origen_plantilla"] == "sintetica" for a in ajustes):
+        avisos.append("plantillas_sinteticas")
+    if puntos:
+        onda, flujo, error = _arrays(puntos)
+        if float(np.median(np.abs(flujo) / error)) < SNR_BAJA:
+            avisos.append("senal_ruido_baja")
+        if float(onda.max() - onda.min()) < COBERTURA_MINIMA * (LONGITUD_ONDA_MAX - LONGITUD_ONDA_MIN):
+            avisos.append("cobertura_espectral_parcial")
+    if agrupacion == "detector":
+        avisos.append("agrupado_por_detector")
+    if tipo in TIPOS_CON_LUZ_REFLEJADA:
+        avisos.append("luz_reflejada_y_termica")
+    return avisos
+
+
+def _ajuste_publico(ajuste):
+    """Campos del contrato. La escala solo se publica si es positiva (una escala negativa no dibuja nada)."""
+    publico = {
+        "tipo": ajuste["tipo"],
+        "chi2_reducido": ajuste["chi2_reducido"],
+        "grados_libertad": ajuste["grados_libertad"],
+        "n_puntos": ajuste["n_puntos"],
+        "origen_plantilla": ajuste["origen_plantilla"],
+        "referencia_plantilla": ajuste["referencia_plantilla"],
+    }
+    if ajuste["escala"] > 0:
+        publico["escala"] = round(ajuste["escala"], 6)
+    return publico
+
+
+def comparar(puntos, plantillas=None, agrupacion="banda"):
+    """Ajusta las cuatro plantillas y devuelve el tipo más compatible con sus chi cuadrados y avisos."""
     plantillas = cargar_plantillas() if plantillas is None else plantillas
     if not puntos:
-        return {"tipo": "indeterminado", "ajustes": []}
+        return {"tipo": "indeterminado", "ajustes": [], "advertencias": advertencias_de([], agrupacion, [], "indeterminado")}
 
     ajustes = []
     for plantilla in plantillas:
@@ -146,10 +196,8 @@ def comparar(puntos, plantillas=None):
 
     return {
         "tipo": tipo,
-        "ajustes": [
-            {"tipo": ajuste["tipo"], "chi2_reducido": ajuste["chi2_reducido"]}
-            for ajuste in ajustes
-        ],
+        "ajustes": [_ajuste_publico(ajuste) for ajuste in ajustes],
+        "advertencias": advertencias_de(puntos, agrupacion, ajustes, tipo),
     }
 
 
@@ -160,12 +208,13 @@ def clasificar_campo(campo, raiz_datos="datos"):
     plantillas = cargar_plantillas()
     espectros = []
     for espectro in medido["espectros"]:
-        resultado = comparar(espectro["puntos"], plantillas)
+        resultado = comparar(espectro["puntos"], plantillas, espectro.get("agrupacion", "banda"))
         espectros.append(
             {
                 "id_pareja": espectro["id_pareja"],
                 "tipo": resultado["tipo"],
                 "ajustes_plantilla": resultado["ajustes"],
+                "advertencias": resultado["advertencias"],
             }
         )
     return escribir_json(
