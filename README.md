@@ -1349,11 +1349,26 @@ Cada lote programa contra los ejemplos de `contratos/ejemplos/`, que existen des
 
 ## 7. Publicación de la web
 
-La web es estática. Se publica con GitHub Pages desde la rama `main`, carpeta `/` (raíz): *Settings → Pages → Deploy from a branch → main → / (root)*.
+La web es estática: `m9_sitio` lee `datos/m7_publicacion/` con la ruta relativa `../../datos/m7_publicacion/`.
 
-Se publica la raíz, no una subcarpeta, porque `m9_sitio` lee los datos con la ruta relativa `../../datos/m7_publicacion/`. La dirección de la web quedará en `https://beltranpcb.github.io/AstroNova/modulos/m9_sitio/`.
+**Los datos no están en el repositorio.** `datos/` es salida del pipeline, no fuente: `.gitignore` lo excluye entero salvo su `LEEME.md`. Por eso la web no puede publicarse tal cual con GitHub Pages: el repositorio no lleva los JSON ni los PNG que necesita leer.
 
-Para probar en local hay que servir también la raíz del repositorio (por ejemplo con `python -m http.server` lanzado desde la raíz), nunca abrir el HTML con doble clic.
+Formas de servila, de la más simple a la más automática:
+
+1. **En local, para la demo.** Servir la raíz y ejecutar el pipeline antes:
+   ```bash
+   python modulos/m9_sitio/ejemplos/generar_datos.py   # datos de demostración
+   # o el pipeline real: m1 → m2 → … → m7
+   python3 -m http.server 8765
+   # http://127.0.0.1:8765/modulos/m9_sitio/index.html
+   ```
+   Nunca abrir el HTML con doble clic: el navegador bloquea `fetch`.
+
+2. **GitHub Pages a partir de un artefacto.** Un flujo de trabajo ejecuta el pipeline, guarda `datos/m7_publicacion/` y lo sube junto con el sitio al artefacto de Pages. El repositorio sigue sin datos; lo que se publica es el resultado de esa ejecución.
+
+3. **Carpeta de publicación generada.** `m7` escribe en una carpeta local que se despliega en otro sitio (Vercel, Netlify) fuera de este repositorio.
+
+La dirección de Pages, si se usa la opción 2, quedaría en `https://beltranpcb.github.io/AstroNova/modulos/m9_sitio/`.
 
 ## 8. Límites y riesgos
 
