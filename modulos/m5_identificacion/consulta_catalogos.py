@@ -21,17 +21,19 @@ import datetime
 import json
 import re
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import requests
 
-RADIO_BUSQUEDA_SEGARC = 300.0  # 5 minutos de arco alrededor de la posición observada
+RADIO_BUSQUEDA_SEGARC = 60.0  # 1 minuto de arco: ~85 veces el error de posición típico (0,7″)
 URL_JPL = "https://ssd-api.jpl.nasa.gov/sb_ident.api"
 URL_MPCHECKER = "https://minorplanetcenter.net/cgi-bin/mpcheck.cgi"
-TIEMPO_MAXIMO_JPL_S = 170  # el segundo paso de JPL (integración numérica) es lento
-TIEMPO_MAXIMO_MPC_S = 60
+TIEMPO_MAXIMO_JPL_S = 30  # JPL tarda hasta 170 s con integración numérica; 30 s basta para identificar
+TIEMPO_MAXIMO_MPC_S = 30
 AGENTE = "HUELLA-X/0.1 (NASA Space Apps 2026; python-requests)"
 SERVICIOS = ("mpchecker", "jpl_sb_ident")
+CONSULTAS_EN_PARALELO = 8
 
 
 # ------------------------------------------------------------- conversiones
@@ -200,7 +202,9 @@ def nombre_cache(campo, id_pareja):
 
 
 def consultas_pendientes(fuentes, movimiento):
-    """Parejas no estacionarias con la posición de su fuente A y la fecha de la época A."""
+    """Parejas no estacionarias con la posición de su fuente A y la fecha de la época A.
+
+    """
     por_id = {f["id_fuente"]: f for f in fuentes["fuentes"]}
     clases = {p["id_pareja"]: p["clase"] for p in movimiento["parejas"]}
     mjd_a = fuentes["epocas"]["epoca_a"]["mjd"]
@@ -234,15 +238,15 @@ def consultar_campo(campo, raiz_datos="datos"):
     cache = raiz / "m5_identificacion" / "cache"
     cache.mkdir(parents=True, exist_ok=True)
     nuevos, existentes, fallidos = [], [], []
-    for consulta in consultas_pendientes(fuentes, movimiento):
+
+    def atender(consulta):
+        """Consulta una pareja y guarda su respuesta. Devuelve (estado, ruta, fallo)."""
         ruta = cache / nombre_cache(campo, consulta["id_pareja"])
         if ruta.exists():
-            existentes.append(ruta)
-            continue
+            return "existente", ruta, None
         respuestas = consultar_servicios(consulta["ra_grados"], consulta["dec_grados"], consulta["mjd"])
         if all(r["estado"] == "error" for r in respuestas.values()):
-            fallidos.append((consulta["id_pareja"], {s: r["mensaje"] for s, r in respuestas.items()}))
-            continue
+            return "fallido", None, (consulta["id_pareja"], {s: r["mensaje"] for s, r in respuestas.items()})
         contenido = {
             "_comentario": "Respuesta guardada de los catálogos de cuerpos menores. Generado por m5_identificacion.",
             "campo": campo,
@@ -252,7 +256,19 @@ def consultar_campo(campo, raiz_datos="datos"):
             "respuestas": respuestas,
         }
         ruta.write_text(json.dumps(contenido, ensure_ascii=False, indent=2), encoding="utf-8")
-        nuevos.append(ruta)
+        return "nuevo", ruta, None
+
+    pendientes = consultas_pendientes(fuentes, movimiento)
+    # En paralelo: con 42 parejas y los timeouts por servicio, en serie no cabe en
+    # los dos minutos de demo (medido: 6 respuestas en 15 minutos).
+    with ThreadPoolExecutor(max_workers=CONSULTAS_EN_PARALELO) as pool:
+        for estado, ruta, fallo in pool.map(atender, pendientes):
+            if estado == "nuevo":
+                nuevos.append(ruta)
+            elif estado == "existente":
+                existentes.append(ruta)
+            else:
+                fallidos.append(fallo)
     return nuevos, existentes, fallidos
 
 
