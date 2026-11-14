@@ -1,0 +1,67 @@
+/* ============================================================================
+   HUELLA X — juego (docs/game/game.css)
+   Estilos propios del minijuego «Encuentra al intruso». Reutiliza las
+   variables de estilo.css (--fondo, --acento, --acierto, --fallo) para que la
+   web y el juego se vean como una sola pieza.
+   ========================================================================== */
+
+.juego-envoltorio { position: relative; }
+
+#juego-lienzo { border-radius: 0; }
+
+.juego-pie #btn-pista:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+.overlay .marcador-ronda {
+  font-family: var(--mono);
+  font-size: .8rem;
+  color: var(--texto-apagado);
+}
+
+.overlay .resultado {
+  font-family: var(--mono);
+  font-size: 1.1rem;
+  color: var(--acierto);
+}
+.overlay .resultado.fallo { color: var(--fallo); }
+
+.overlay .rango {
+  font-size: 1.9rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+  background: linear-gradient(100deg, #fff 10%, var(--acento) 60%, #9d7bff 95%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.tarjeta-objeto {
+  background: var(--panel-alto);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  padding: .9rem 1.1rem;
+  max-width: 26rem;
+  text-align: left;
+}
+.tarjeta-objeto h3 { margin: 0 0 .2rem; font-size: 1rem; }
+.tarjeta-objeto .tipo { color: var(--acento); font-size: .8rem; margin-bottom: .5rem; }
+.tarjeta-objeto dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: .2rem .7rem;
+  margin: 0;
+  font-size: .78rem;
+}
+.tarjeta-objeto dt { color: var(--texto-apagado); }
+.tarjeta-objeto dd { margin: 0; font-family: var(--mono); }
+
+.mini-espectro {
+  width: 100%;
+  height: 74px;
+  margin-top: .6rem;
+  border-radius: var(--radio-sm);
+  background: var(--fondo-alt);
+  display: block;
+}

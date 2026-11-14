@@ -1,0 +1,903 @@
+{
+  "_comentario": "Huella espectral de cada pareja medida.",
+  "version_contrato": "1",
+  "campo": "luhman",
+  "espectros": [
+    {
+      "id_pareja": "p001",
+      "agrupacion": "banda",
+      "puntos": [
+        {
+          "longitud_onda_micras": 0.75,
+          "flujo_mjy": 1.25,
+          "error_mjy": 0.075,
+          "mjd": 60950.2,
+          "detector": 1
+        },
+        {
+          "longitud_onda_micras": 0.822,
+          "flujo_mjy": 1.2395,
+          "error_mjy": 0.0731,
+          "mjd": 60950.2,
+          "detector": 1
+        },
+        {
+          "longitud_onda_micras": 0.8941,
+          "flujo_mjy": 1.1589,
+          "error_mjy": 0.0713,
+          "mjd": 60950.2,
+          "detector": 1
+        },
+        {
+          "longitud_onda_micras": 0.9661,
+          "flujo_mjy": 1.1819,
+          "error_mjy": 0.0695,
+          "mjd": 60950.2,
+          "detector": 1
+        },
+        {
+          "longitud_onda_micras": 1.0381,
+          "flujo_mjy": 1.1253,
+          "error_mjy": 0.0678,
+          "mjd": 60950.2,
+          "detector": 1
+        },
+        {
+          "longitud_onda_micras": 1.1102,
+          "flujo_mjy": 1.0871,
+          "error_mjy": 0.0661,
+          "mjd": 60950.2,
+          "detector": 2
+        },
+        {
+          "longitud_onda_micras": 1.1822,
+          "flujo_mjy": 1.1005,
+          "error_mjy": 0.0645,
+          "mjd": 60950.2,
+          "detector": 2
+        },
+        {
+          "longitud_onda_micras": 1.2542,
+          "flujo_mjy": 1.0246,
+          "error_mjy": 0.0629,
+          "mjd": 60950.2,
+          "detector": 2
+        },
+        {
+          "longitud_onda_micras": 1.3263,
+          "flujo_mjy": 1.0303,
+          "error_mjy": 0.0613,
+          "mjd": 60950.2,
+          "detector": 2
+        },
+        {
+          "longitud_onda_micras": 1.3983,
+          "flujo_mjy": 1.0059,
+          "error_mjy": 0.0598,
+          "mjd": 60950.2,
+          "detector": 2
+        },
+        {
+          "longitud_onda_micras": 1.4703,
+          "flujo_mjy": 0.9493,
+          "error_mjy": 0.0583,
+          "mjd": 60950.2,
+          "detector": 2
+        },
+        {
+          "longitud_onda_micras": 1.5424,
+          "flujo_mjy": 0.9698,
+          "error_mjy": 0.0568,
+          "mjd": 60950.2,
+          "detector": 2
+        },
+        {
+          "longitud_onda_micras": 1.6144,
+          "flujo_mjy": 0.9123,
+          "error_mjy": 0.0554,
+          "mjd": 60950.2,
+          "detector": 2
+        },
+        {
+          "longitud_onda_micras": 1.6864,
+          "flujo_mjy": 0.8956,
+          "error_mjy": 0.054,
+          "mjd": 60950.2,
+          "detector": 3
+        },
+        {
+          "longitud_onda_micras": 1.7585,
+          "flujo_mjy": 0.8964,
+          "error_mjy": 0.0527,
+          "mjd": 60950.2,
+          "detector": 3
+        },
+        {
+          "longitud_onda_micras": 1.8305,
+          "flujo_mjy": 0.8352,
+          "error_mjy": 0.0514,
+          "mjd": 60950.2,
+          "detector": 3
+        },
+        {
+          "longitud_onda_micras": 1.9025,
+          "flujo_mjy": 0.8483,
+          "error_mjy": 0.0501,
+          "mjd": 60950.2,
+          "detector": 3
+        },
+        {
+          "longitud_onda_micras": 1.9746,
+          "flujo_mjy": 0.8154,
+          "error_mjy": 0.0489,
+          "mjd": 60950.2,
+          "detector": 3
+        },
+        {
+          "longitud_onda_micras": 2.0466,
+          "flujo_mjy": 0.7798,
+          "error_mjy": 0.0476,
+          "mjd": 60950.2,
+          "detector": 3
+        },
+        {
+          "longitud_onda_micras": 2.1186,
+          "flujo_mjy": 0.7936,
+          "error_mjy": 0.0465,
+          "mjd": 60950.2,
+          "detector": 3
+        },
+        {
+          "longitud_onda_micras": 2.1907,
+          "flujo_mjy": 0.7407,
+          "error_mjy": 0.0453,
+          "mjd": 60950.2,
+          "detector": 3
+        },
+        {
+          "longitud_onda_micras": 2.2627,
+          "flujo_mjy": 0.7382,
+          "error_mjy": 0.0442,
+          "mjd": 60950.2,
+          "detector": 3
+        },
+        {
+          "longitud_onda_micras": 2.3347,
+          "flujo_mjy": 0.7284,
+          "error_mjy": 0.0431,
+          "mjd": 60950.2,
+          "detector": 3
+        },
+        {
+          "longitud_onda_micras": 2.4068,
+          "flujo_mjy": 0.6828,
+          "error_mjy": 0.042,
+          "mjd": 60950.2,
+          "detector": 3
+        },
+        {
+          "longitud_onda_micras": 2.4788,
+          "flujo_mjy": 0.6971,
+          "error_mjy": 0.041,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 2.5508,
+          "flujo_mjy": 0.6609,
+          "error_mjy": 0.0399,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 2.6229,
+          "flujo_mjy": 0.6418,
+          "error_mjy": 0.0389,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 2.6949,
+          "flujo_mjy": 0.6476,
+          "error_mjy": 0.038,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 2.7669,
+          "flujo_mjy": 0.6027,
+          "error_mjy": 0.037,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 2.839,
+          "flujo_mjy": 0.6083,
+          "error_mjy": 0.0361,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 2.911,
+          "flujo_mjy": 0.5909,
+          "error_mjy": 0.0352,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 2.9831,
+          "flujo_mjy": 0.5599,
+          "error_mjy": 0.0343,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 3.0551,
+          "flujo_mjy": 0.5715,
+          "error_mjy": 0.0335,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 3.1271,
+          "flujo_mjy": 0.536,
+          "error_mjy": 0.0326,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 3.1992,
+          "flujo_mjy": 0.5289,
+          "error_mjy": 0.0318,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 3.2712,
+          "flujo_mjy": 0.2213,
+          "error_mjy": 0.013,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 3.3432,
+          "flujo_mjy": 0.2065,
+          "error_mjy": 0.0127,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 3.4153,
+          "flujo_mjy": 0.2103,
+          "error_mjy": 0.0124,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 3.4873,
+          "flujo_mjy": 0.4789,
+          "error_mjy": 0.0288,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 3.5593,
+          "flujo_mjy": 0.4602,
+          "error_mjy": 0.0281,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 3.6314,
+          "flujo_mjy": 0.4673,
+          "error_mjy": 0.0274,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 3.7034,
+          "flujo_mjy": 0.4355,
+          "error_mjy": 0.0267,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 3.7754,
+          "flujo_mjy": 0.436,
+          "error_mjy": 0.026,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 3.8475,
+          "flujo_mjy": 0.428,
+          "error_mjy": 0.0254,
+          "mjd": 60950.2,
+          "detector": 5
+        },
+        {
+          "longitud_onda_micras": 3.9195,
+          "flujo_mjy": 0.4024,
+          "error_mjy": 0.0247,
+          "mjd": 60950.2,
+          "detector": 5
+        },
+        {
+          "longitud_onda_micras": 3.9915,
+          "flujo_mjy": 0.4111,
+          "error_mjy": 0.0241,
+          "mjd": 60950.2,
+          "detector": 5
+        },
+        {
+          "longitud_onda_micras": 4.0636,
+          "flujo_mjy": 0.3882,
+          "error_mjy": 0.0235,
+          "mjd": 60950.2,
+          "detector": 5
+        },
+        {
+          "longitud_onda_micras": 4.1356,
+          "flujo_mjy": 0.379,
+          "error_mjy": 0.0229,
+          "mjd": 60950.2,
+          "detector": 5
+        },
+        {
+          "longitud_onda_micras": 4.2076,
+          "flujo_mjy": 0.3809,
+          "error_mjy": 0.0224,
+          "mjd": 60950.2,
+          "detector": 5
+        },
+        {
+          "longitud_onda_micras": 4.2797,
+          "flujo_mjy": 0.3546,
+          "error_mjy": 0.0218,
+          "mjd": 60950.2,
+          "detector": 5
+        },
+        {
+          "longitud_onda_micras": 4.3517,
+          "flujo_mjy": 0.3591,
+          "error_mjy": 0.0213,
+          "mjd": 60950.2,
+          "detector": 5
+        },
+        {
+          "longitud_onda_micras": 4.4237,
+          "flujo_mjy": 0.347,
+          "error_mjy": 0.0207,
+          "mjd": 60950.2,
+          "detector": 6
+        },
+        {
+          "longitud_onda_micras": 4.4958,
+          "flujo_mjy": 0.3303,
+          "error_mjy": 0.0202,
+          "mjd": 60950.2,
+          "detector": 6
+        },
+        {
+          "longitud_onda_micras": 4.5678,
+          "flujo_mjy": 0.3367,
+          "error_mjy": 0.0197,
+          "mjd": 60950.2,
+          "detector": 6
+        },
+        {
+          "longitud_onda_micras": 4.6398,
+          "flujo_mjy": 0.315,
+          "error_mjy": 0.0192,
+          "mjd": 60950.2,
+          "detector": 6
+        },
+        {
+          "longitud_onda_micras": 4.7119,
+          "flujo_mjy": 0.3124,
+          "error_mjy": 0.0187,
+          "mjd": 60950.2,
+          "detector": 6
+        },
+        {
+          "longitud_onda_micras": 4.7839,
+          "flujo_mjy": 0.3098,
+          "error_mjy": 0.0183,
+          "mjd": 60950.2,
+          "detector": 6
+        },
+        {
+          "longitud_onda_micras": 4.8559,
+          "flujo_mjy": 0.2896,
+          "error_mjy": 0.0178,
+          "mjd": 60950.2,
+          "detector": 6
+        },
+        {
+          "longitud_onda_micras": 4.928,
+          "flujo_mjy": 0.2954,
+          "error_mjy": 0.0174,
+          "mjd": 60950.2,
+          "detector": 6
+        },
+        {
+          "longitud_onda_micras": 5.0,
+          "flujo_mjy": 0.2812,
+          "error_mjy": 0.0169,
+          "mjd": 60950.2,
+          "detector": 6
+        }
+      ],
+      "tipo": "enana_marron",
+      "ajustes_plantilla": [
+        {
+          "tipo": "asteroide_rocoso",
+          "chi2_reducido": 1.37
+        },
+        {
+          "tipo": "asteroide_oscuro",
+          "chi2_reducido": 1.72
+        },
+        {
+          "tipo": "cometa",
+          "chi2_reducido": 2.77
+        },
+        {
+          "tipo": "enana_marron",
+          "chi2_reducido": 1.02
+        }
+      ],
+      "temperatura_k": 1350.0,
+      "incertidumbre_temperatura_k": 108.0,
+      "pico_wien_micras": 2.15
+    },
+    {
+      "id_pareja": "p002",
+      "agrupacion": "banda",
+      "puntos": [
+        {
+          "longitud_onda_micras": 0.75,
+          "flujo_mjy": 1.25,
+          "error_mjy": 0.075,
+          "mjd": 60950.2,
+          "detector": 1
+        },
+        {
+          "longitud_onda_micras": 0.822,
+          "flujo_mjy": 1.2395,
+          "error_mjy": 0.0731,
+          "mjd": 60950.2,
+          "detector": 1
+        },
+        {
+          "longitud_onda_micras": 0.8941,
+          "flujo_mjy": 1.1589,
+          "error_mjy": 0.0713,
+          "mjd": 60950.2,
+          "detector": 1
+        },
+        {
+          "longitud_onda_micras": 0.9661,
+          "flujo_mjy": 1.1819,
+          "error_mjy": 0.0695,
+          "mjd": 60950.2,
+          "detector": 1
+        },
+        {
+          "longitud_onda_micras": 1.0381,
+          "flujo_mjy": 1.1253,
+          "error_mjy": 0.0678,
+          "mjd": 60950.2,
+          "detector": 1
+        },
+        {
+          "longitud_onda_micras": 1.1102,
+          "flujo_mjy": 1.0871,
+          "error_mjy": 0.0661,
+          "mjd": 60950.2,
+          "detector": 2
+        },
+        {
+          "longitud_onda_micras": 1.1822,
+          "flujo_mjy": 1.1005,
+          "error_mjy": 0.0645,
+          "mjd": 60950.2,
+          "detector": 2
+        },
+        {
+          "longitud_onda_micras": 1.2542,
+          "flujo_mjy": 1.0246,
+          "error_mjy": 0.0629,
+          "mjd": 60950.2,
+          "detector": 2
+        },
+        {
+          "longitud_onda_micras": 1.3263,
+          "flujo_mjy": 1.0303,
+          "error_mjy": 0.0613,
+          "mjd": 60950.2,
+          "detector": 2
+        },
+        {
+          "longitud_onda_micras": 1.3983,
+          "flujo_mjy": 1.0059,
+          "error_mjy": 0.0598,
+          "mjd": 60950.2,
+          "detector": 2
+        },
+        {
+          "longitud_onda_micras": 1.4703,
+          "flujo_mjy": 0.9493,
+          "error_mjy": 0.0583,
+          "mjd": 60950.2,
+          "detector": 2
+        },
+        {
+          "longitud_onda_micras": 1.5424,
+          "flujo_mjy": 0.9698,
+          "error_mjy": 0.0568,
+          "mjd": 60950.2,
+          "detector": 2
+        },
+        {
+          "longitud_onda_micras": 1.6144,
+          "flujo_mjy": 0.9123,
+          "error_mjy": 0.0554,
+          "mjd": 60950.2,
+          "detector": 2
+        },
+        {
+          "longitud_onda_micras": 1.6864,
+          "flujo_mjy": 0.8956,
+          "error_mjy": 0.054,
+          "mjd": 60950.2,
+          "detector": 3
+        },
+        {
+          "longitud_onda_micras": 1.7585,
+          "flujo_mjy": 0.8964,
+          "error_mjy": 0.0527,
+          "mjd": 60950.2,
+          "detector": 3
+        },
+        {
+          "longitud_onda_micras": 1.8305,
+          "flujo_mjy": 0.8352,
+          "error_mjy": 0.0514,
+          "mjd": 60950.2,
+          "detector": 3
+        },
+        {
+          "longitud_onda_micras": 1.9025,
+          "flujo_mjy": 0.8483,
+          "error_mjy": 0.0501,
+          "mjd": 60950.2,
+          "detector": 3
+        },
+        {
+          "longitud_onda_micras": 1.9746,
+          "flujo_mjy": 0.8154,
+          "error_mjy": 0.0489,
+          "mjd": 60950.2,
+          "detector": 3
+        },
+        {
+          "longitud_onda_micras": 2.0466,
+          "flujo_mjy": 0.7798,
+          "error_mjy": 0.0476,
+          "mjd": 60950.2,
+          "detector": 3
+        },
+        {
+          "longitud_onda_micras": 2.1186,
+          "flujo_mjy": 0.7936,
+          "error_mjy": 0.0465,
+          "mjd": 60950.2,
+          "detector": 3
+        },
+        {
+          "longitud_onda_micras": 2.1907,
+          "flujo_mjy": 0.7407,
+          "error_mjy": 0.0453,
+          "mjd": 60950.2,
+          "detector": 3
+        },
+        {
+          "longitud_onda_micras": 2.2627,
+          "flujo_mjy": 0.7382,
+          "error_mjy": 0.0442,
+          "mjd": 60950.2,
+          "detector": 3
+        },
+        {
+          "longitud_onda_micras": 2.3347,
+          "flujo_mjy": 0.7284,
+          "error_mjy": 0.0431,
+          "mjd": 60950.2,
+          "detector": 3
+        },
+        {
+          "longitud_onda_micras": 2.4068,
+          "flujo_mjy": 0.6828,
+          "error_mjy": 0.042,
+          "mjd": 60950.2,
+          "detector": 3
+        },
+        {
+          "longitud_onda_micras": 2.4788,
+          "flujo_mjy": 0.6971,
+          "error_mjy": 0.041,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 2.5508,
+          "flujo_mjy": 0.6609,
+          "error_mjy": 0.0399,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 2.6229,
+          "flujo_mjy": 0.6418,
+          "error_mjy": 0.0389,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 2.6949,
+          "flujo_mjy": 0.6476,
+          "error_mjy": 0.038,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 2.7669,
+          "flujo_mjy": 0.6027,
+          "error_mjy": 0.037,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 2.839,
+          "flujo_mjy": 0.6083,
+          "error_mjy": 0.0361,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 2.911,
+          "flujo_mjy": 0.5909,
+          "error_mjy": 0.0352,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 2.9831,
+          "flujo_mjy": 0.5599,
+          "error_mjy": 0.0343,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 3.0551,
+          "flujo_mjy": 0.5715,
+          "error_mjy": 0.0335,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 3.1271,
+          "flujo_mjy": 0.536,
+          "error_mjy": 0.0326,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 3.1992,
+          "flujo_mjy": 0.5289,
+          "error_mjy": 0.0318,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 3.2712,
+          "flujo_mjy": 0.2213,
+          "error_mjy": 0.013,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 3.3432,
+          "flujo_mjy": 0.2065,
+          "error_mjy": 0.0127,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 3.4153,
+          "flujo_mjy": 0.2103,
+          "error_mjy": 0.0124,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 3.4873,
+          "flujo_mjy": 0.4789,
+          "error_mjy": 0.0288,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 3.5593,
+          "flujo_mjy": 0.4602,
+          "error_mjy": 0.0281,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 3.6314,
+          "flujo_mjy": 0.4673,
+          "error_mjy": 0.0274,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 3.7034,
+          "flujo_mjy": 0.4355,
+          "error_mjy": 0.0267,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 3.7754,
+          "flujo_mjy": 0.436,
+          "error_mjy": 0.026,
+          "mjd": 60950.2,
+          "detector": 4
+        },
+        {
+          "longitud_onda_micras": 3.8475,
+          "flujo_mjy": 0.428,
+          "error_mjy": 0.0254,
+          "mjd": 60950.2,
+          "detector": 5
+        },
+        {
+          "longitud_onda_micras": 3.9195,
+          "flujo_mjy": 0.4024,
+          "error_mjy": 0.0247,
+          "mjd": 60950.2,
+          "detector": 5
+        },
+        {
+          "longitud_onda_micras": 3.9915,
+          "flujo_mjy": 0.4111,
+          "error_mjy": 0.0241,
+          "mjd": 60950.2,
+          "detector": 5
+        },
+        {
+          "longitud_onda_micras": 4.0636,
+          "flujo_mjy": 0.3882,
+          "error_mjy": 0.0235,
+          "mjd": 60950.2,
+          "detector": 5
+        },
+        {
+          "longitud_onda_micras": 4.1356,
+          "flujo_mjy": 0.379,
+          "error_mjy": 0.0229,
+          "mjd": 60950.2,
+          "detector": 5
+        },
+        {
+          "longitud_onda_micras": 4.2076,
+          "flujo_mjy": 0.3809,
+          "error_mjy": 0.0224,
+          "mjd": 60950.2,
+          "detector": 5
+        },
+        {
+          "longitud_onda_micras": 4.2797,
+          "flujo_mjy": 0.3546,
+          "error_mjy": 0.0218,
+          "mjd": 60950.2,
+          "detector": 5
+        },
+        {
+          "longitud_onda_micras": 4.3517,
+          "flujo_mjy": 0.3591,
+          "error_mjy": 0.0213,
+          "mjd": 60950.2,
+          "detector": 5
+        },
+        {
+          "longitud_onda_micras": 4.4237,
+          "flujo_mjy": 0.347,
+          "error_mjy": 0.0207,
+          "mjd": 60950.2,
+          "detector": 6
+        },
+        {
+          "longitud_onda_micras": 4.4958,
+          "flujo_mjy": 0.3303,
+          "error_mjy": 0.0202,
+          "mjd": 60950.2,
+          "detector": 6
+        },
+        {
+          "longitud_onda_micras": 4.5678,
+          "flujo_mjy": 0.3367,
+          "error_mjy": 0.0197,
+          "mjd": 60950.2,
+          "detector": 6
+        },
+        {
+          "longitud_onda_micras": 4.6398,
+          "flujo_mjy": 0.315,
+          "error_mjy": 0.0192,
+          "mjd": 60950.2,
+          "detector": 6
+        },
+        {
+          "longitud_onda_micras": 4.7119,
+          "flujo_mjy": 0.3124,
+          "error_mjy": 0.0187,
+          "mjd": 60950.2,
+          "detector": 6
+        },
+        {
+          "longitud_onda_micras": 4.7839,
+          "flujo_mjy": 0.3098,
+          "error_mjy": 0.0183,
+          "mjd": 60950.2,
+          "detector": 6
+        },
+        {
+          "longitud_onda_micras": 4.8559,
+          "flujo_mjy": 0.2896,
+          "error_mjy": 0.0178,
+          "mjd": 60950.2,
+          "detector": 6
+        },
+        {
+          "longitud_onda_micras": 4.928,
+          "flujo_mjy": 0.2954,
+          "error_mjy": 0.0174,
+          "mjd": 60950.2,
+          "detector": 6
+        },
+        {
+          "longitud_onda_micras": 5.0,
+          "flujo_mjy": 0.2812,
+          "error_mjy": 0.0169,
+          "mjd": 60950.2,
+          "detector": 6
+        }
+      ],
+      "tipo": "enana_marron",
+      "ajustes_plantilla": [
+        {
+          "tipo": "asteroide_rocoso",
+          "chi2_reducido": 1.37
+        },
+        {
+          "tipo": "asteroide_oscuro",
+          "chi2_reducido": 1.72
+        },
+        {
+          "tipo": "cometa",
+          "chi2_reducido": 2.77
+        },
+        {
+          "tipo": "enana_marron",
+          "chi2_reducido": 1.02
+        }
+      ],
+      "temperatura_k": 950.0,
+      "incertidumbre_temperatura_k": 76.0,
+      "pico_wien_micras": 3.05
+    }
+  ]
+}

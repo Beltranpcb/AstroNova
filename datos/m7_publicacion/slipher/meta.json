@@ -1,0 +1,36 @@
+{
+  "_comentario": "Datos de demostración generados por m9_sitio/ejemplos/generar_datos.py.",
+  "version_contrato": "1",
+  "campo": "slipher",
+  "nombre": "Asteroide (1766) Slipher",
+  "centro": {
+    "ra_grados": 45.176,
+    "dec_grados": 12.342
+  },
+  "detector": 2,
+  "escala_segarc_por_pixel": 6.15,
+  "tamano_pixeles": {
+    "ancho": 600,
+    "alto": 600
+  },
+  "epocas": {
+    "epoca_a": {
+      "id_exposicion": "slipher_A",
+      "mjd": 60990.31
+    },
+    "epoca_b": {
+      "id_exposicion": "slipher_B",
+      "mjd": 60990.59
+    },
+    "plantilla": {
+      "id_exposicion": "slipher_T",
+      "mjd": 60811.4
+    }
+  },
+  "horas_entre_a_b": 6.72,
+  "imagenes": {
+    "epoca_a": "epoca_a.png",
+    "epoca_b": "epoca_b.png",
+    "diferencia": "diferencia.png"
+  }
+}

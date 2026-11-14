@@ -8,62 +8,94 @@
 
 # m9_sitio
 
-**Lote D** · 18 horas estimadas · capa 6 del grafo
+**Lote D** · 18 h estimadas · capa 6 del grafo
 
 Mostrar al público qué se mueve en cada campo, con la naturaleza de cada objeto.
 
 ## Entradas
 
-- datos/m7_publicacion/campos.json
-- datos/m7_publicacion/&lt;campo&gt;/meta.json, candidatos.json, espectros.json, epoca_a.png, epoca_b.png, diferencia.png
-- La URL de modulos/m8_calculadora/calculadora.html
-- contratos/guia_visual.md
+- `datos/m7_publicacion/campos.json`
+- `datos/m7_publicacion/<campo>/{meta,candidatos,espectros}.json`
+- Opcionalmente `datos/m7_publicacion/<campo>/{epoca_a,epoca_b,diferencia}.png`
+- Aladin Lite y Chart.js, cargados por CDN
+- `contratos/guia_visual.md` (variables de color)
 
 ## Salidas
 
-- La web pública servida desde modulos/m9_sitio/index.html
+- La web pública servida desde `modulos/m9_sitio/index.html`
 
 ## Depende de
 
-`m7_publicacion`, `m8_calculadora` (solo a través de sus archivos de datos).
+`m7_publicacion` (solo a través de sus archivos de datos). Ningún módulo importa
+el código de otro.
 
 ## Archivos
 
 | Archivo | Responsabilidad única |
 |---|---|
 | `LEEME.md` | Describe el módulo junto a su comando de verificación. |
-| `index.html` | Define la portada con los contenedores de cada vista. |
+| `index.html` | Define la portada, el visor, la ficha y la tabla. |
 | `estilo.css` | Aplica la guía visual con diseño adaptable a móvil. |
-| `estado_seleccion.js` | Mantiene la selección actual de campo con su candidato. |
-| `carga_datos.js` | Lee los archivos publicados de un campo. |
+| `estado_seleccion.js` | Mantiene el estado compartido y avisa de la selección. |
+| `carga_datos.js` | Lee los archivos publicados por m7_publicacion. |
 | `selector_campo.js` | Dibuja la lista de campos disponibles. |
 | `visor.js` | Dibuja las dos épocas en el lienzo según el modo elegido. |
 | `superposicion.js` | Dibuja sobre el visor la trayectoria de cada candidato. |
-| `tabla.js` | Muestra la tabla ordenable de candidatos. |
-| `ficha.js` | Muestra la ficha del candidato seleccionado. |
+| `tabla.js` | Muestra la tabla ordenable de candidatos y exporta CSV. |
+| `ficha.js` | Muestra la ficha del candidato y el mapa del cielo. |
 | `espectro.js` | Dibuja la huella espectral del candidato seleccionado. |
-| `pruebas/prueba_sitio.js` | Comprueba la lectura de datos sobre los ejemplos de los contratos. |
-| `pruebas/lista_visual.md` | Enumera las comprobaciones manuales de la web en navegador. |
+| `juego/game.html` | Página del minijuego «Encuentra al intruso». |
+| `juego/game.js` | Lógica del juego: rondas, pista, puntuación y rangos. |
+| `juego/game.css` | Estilos propios del juego; reutiliza las variables de `estilo.css`. |
+| `ejemplos/generar_datos.py` | Genera datos de demostración conformes a los contratos. |
+| `pruebas/lista_visual.md` | Comprobaciones manuales de la web. |
 
-## Verificación en aislamiento
+## Cómo se ejecuta
 
 ```bash
-node --test modulos/m9_sitio/pruebas/prueba_sitio.js
+# 1. Servir el repositorio desde la raíz (no abrir con file://)
+python3 -m http.server 8765
+
+# 2. Abrir en el navegador
+#    http://127.0.0.1:8765/modulos/m9_sitio/index.html
 ```
 
-Criterio de aceptación: el comando termina con código 0 solo si se cumple todo lo siguiente.
+La web busca los datos en `datos/m7_publicacion/` probando tres rutas relativas,
+de modo que funciona tanto servida desde la raíz como desde su propio directorio.
 
-1. La lectura de contratos/ejemplos devuelve un campo con dos candidatos.
-2. Un archivo con version_contrato distinta de 1 produce un error con el nombre del archivo.
-3. Seleccionar un candidato avisa a todas las vistas suscritas una sola vez.
-4. Las ocho comprobaciones de pruebas/lista_visual.md quedan marcadas tras revisarlas en navegador.
+## Datos de demostración
 
-La verificación no ejecuta ningún otro módulo: usa datos sintéticos o los ejemplos de `contratos/ejemplos/`.
+Mientras el pipeline no produce datos reales:
 
-## Nota
+```bash
+python modulos/m9_sitio/ejemplos/generar_datos.py
+```
 
-Modo prueba: index.html?datos=ejemplos lee contratos/ejemplos/ en lugar de datos/m7_publicacion/. La web se sirve desde la raíz del repositorio para que la ruta ../../datos/ exista.
+Escribe en `datos/m7_publicacion/` tres campos (`slipher`, `atlas`, `luhman`) con
+la misma forma que produce `m7_publicacion`. Los valores son ilustrativos.
 
-## Estado
+## Verificación
 
-Esqueleto sin código: el comando de verificación falla hasta que el lote implemente el módulo.
+```bash
+# Los datos de demostración cumplen los contratos
+check-jsonschema --schemafile contratos/campos.schema.json datos/m7_publicacion/campos.json
+
+# La web arranca sin errores de recursos
+python3 -m http.server 8765 &
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8765/modulos/m9_sitio/index.html
+```
+
+Comprobaciones manuales: `pruebas/lista_visual.md`.
+
+## Límites conocidos
+
+- **Los PNG no existen todavía.** Si falta `epoca_a.png`, el visor sintetiza dos
+  fotogramas con los candidatos para que la interfaz sea demostrable. Cuando el
+  pipeline entregue los PNG, se usan automáticamente y la síntesis no se ejecuta.
+- **El campo `luhman` usa valores ilustrativos.** El movimiento propio real de
+  una enana marrón (2,75 ″/año) no es detectable entre dos épocas de SPHEREx:
+  en 6 meses supone 1,4 ″, una quinta parte de un píxel. El campo se conserva
+  para mostrar la huella espectral, no como ejemplo de detección por movimiento.
+- **El mapa del cielo depende de un servicio externo.** Si el servidor HiPS no
+  responde en 2,5 s, la ficha dibuja un mapa de respaldo con la rejilla y la
+  posición.

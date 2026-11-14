@@ -1,0 +1,24 @@
+{
+  "_comentario": "Índice de los campos publicados.",
+  "version_contrato": "1",
+  "campos": [
+    {
+      "campo": "slipher",
+      "nombre": "Asteroide (1766) Slipher",
+      "ruta": "slipher",
+      "numero_candidatos": 3
+    },
+    {
+      "campo": "atlas",
+      "nombre": "Cometa 3I/ATLAS",
+      "ruta": "atlas",
+      "numero_candidatos": 3
+    },
+    {
+      "campo": "luhman",
+      "nombre": "Nana marrón Luhman 16",
+      "ruta": "luhman",
+      "numero_candidatos": 3
+    }
+  ]
+}

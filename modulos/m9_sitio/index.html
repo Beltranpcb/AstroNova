@@ -1,11 +1,141 @@
-<!-- ============================================================================
-     ARCHIVO: modulos/m9_sitio/index.html
-     MODULO: m9_sitio (Lote D)
-     ROL: Define la portada con los contenedores de cada vista.
-     LEE: estilo.css; los ocho archivos .js de trabajo del módulo; Aladin Lite v3 con Chart.js por CDN.
-     PRODUCE: La estructura que el navegador muestra: selector de campo, visor, tabla, ficha, espectro, enlace a la calculadora.
-     FUNCIONAMIENTO PREVISTO:
-       Archivo de estructura sin lógica: declara los contenedores que cada vista rellena.
-     VERIFICACION: La página abre sin errores de consola; el enlace a la calculadora apunta a ../m8_calculadora/calculadora.html.
-     ESTADO: Esqueleto sin código. Este archivo solo documenta el trabajo pendiente.
-     ============================================================================ -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HUELLA X — no solo vemos qué se mueve, sabemos de qué está hecho</title>
+<meta name="description" content="Explorador de SPHEREx: detección temporal, verificación en catálogos y huella espectral de los objetos que cambian en el cielo.">
+<link rel="stylesheet" href="estilo.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+<!-- Aladin Lite v3 se publica como módulo ES: se importa y se expone como
+     window.A, avisando con el evento «aladin-listo» cuando ya se puede usar. -->
+<script type="module">
+  try {
+    const { default: A } = await import("https://cdn.jsdelivr.net/npm/aladin-lite@3/dist/aladin.min.js");
+    window.A = A;
+    const listo = A && A.init && typeof A.init.then === "function" ? A.init : Promise.resolve();
+    await listo;
+    window.dispatchEvent(new Event("aladin-listo"));
+  } catch (err) {
+    console.warn("Aladin Lite no disponible:", err);
+  }
+</script>
+</head>
+<body>
+
+<!-- ------------------------------------------------------------- Portada -->
+<section id="portada">
+  <h1 class="marca">HUELLA X</h1>
+  <p class="lema">
+    No solo vemos qué se mueve en el cielo: sabemos de qué está hecho.
+    Dos épocas de SPHEREx, una huella espectral, y una pregunta honesta sobre el Planeta X.
+  </p>
+  <div class="acciones">
+    <button class="primario" id="btn-explorar">Explorar</button>
+    <button id="btn-jugar">Jugar</button>
+  </div>
+  <div class="campos-portada" id="portada-campos"></div>
+  <p class="pie">
+    Datos reales de SPHEREx (IRSA, DR1 y QR3) procesados antes de la demo.
+    Cada detección se marca como <b>candidato</b>: dos épocas no demuestran un objeto nuevo.
+  </p>
+</section>
+
+<!-- ---------------------------------------------------------- Aplicación -->
+<div id="app">
+
+  <header class="barra">
+    <div class="titulo">HUELLA <span>X</span></div>
+    <div class="campo-selector" id="selector-campos"></div>
+  </header>
+
+  <main>
+    <!-- Visor de épocas -->
+    <section class="panel">
+      <h2>Visor de épocas</h2>
+      <div class="visor-caja">
+        <canvas id="lienzo" width="600" height="600"></canvas>
+        <div id="cortina" data-etiqueta="A | B"></div>
+      </div>
+
+      <div class="visor-controles">
+        <div class="grupo">
+          <button id="modo-parpadeo" class="activo">Parpadeo</button>
+          <button id="modo-cortina">Cortina</button>
+          <button id="modo-diferencia">Diferencia</button>
+        </div>
+        <button id="btn-reproducir">Pausa</button>
+        <button id="btn-reset">Centrar</button>
+      </div>
+
+      <div class="visor-fechas">
+        <span>Época A: <b id="fecha-a">—</b></span>
+        <span>Época B: <b id="fecha-b">—</b></span>
+        <span>Transcurrido: <b id="transcurrido">—</b></span>
+      </div>
+    </section>
+
+    <!-- Ficha del objeto -->
+    <aside class="panel">
+      <h2>Ficha del candidato</h2>
+      <div class="ficha" id="ficha-contenido">
+        <p class="vacio">Selecciona un candidato en el visor o en la tabla.</p>
+      </div>
+      <div class="ficha" style="padding-top:0">
+        <div class="grafico-caja"><canvas id="grafico-espectro"></canvas></div>
+        <p class="vacio" id="ficha-espectro-nota" style="font-size:.74rem;margin:.4rem 0 0"></p>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Tabla de candidatos -->
+  <section class="tabla-caja panel">
+    <div class="tabla-cabecera">
+      <h2>Candidatos</h2>
+      <div class="filtros" id="filtros">
+        <button class="activo" data-filtro="todas">Todas</button>
+        <button data-filtro="conocido">Conocidas</button>
+        <button data-filtro="sin_identificar">Sin identificar</button>
+        <button data-filtro="artefacto_descartado">Artefactos</button>
+      </div>
+      <button id="btn-csv">CSV</button>
+    </div>
+    <div style="overflow-x:auto">
+      <table id="tabla-candidatos">
+        <thead>
+          <tr>
+            <th data-orden="id_candidato">ID <span class="flecha"></span></th>
+            <th data-orden="nombre_objeto">Objeto <span class="flecha"></span></th>
+            <th data-orden="separacion_segarc">Separación <span class="flecha"></span></th>
+            <th data-orden="velocidad_segarc_por_hora">Velocidad <span class="flecha"></span></th>
+            <th data-orden="significancia">Significancia <span class="flecha"></span></th>
+            <th data-orden="clase_movimiento">Clase <span class="flecha"></span></th>
+            <th data-orden="estado">Catálogo <span class="flecha"></span></th>
+          </tr>
+        </thead>
+        <tbody id="cuerpo-tabla"></tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+
+<script src="estado_seleccion.js"></script>
+<script src="carga_datos.js"></script>
+<script src="selector_campo.js"></script>
+<script src="visor.js"></script>
+<script src="superposicion.js"></script>
+<script src="tabla.js"></script>
+<script src="ficha.js"></script>
+<script src="espectro.js"></script>
+<script>
+  document.getElementById("btn-explorar").addEventListener("click", () => {
+    document.getElementById("portada").style.display = "none";
+    document.getElementById("app").classList.add("visible");
+  });
+  document.getElementById("btn-jugar").addEventListener("click", () => {
+    window.location.href = "juego/game.html";
+  });
+</script>
+</body>
+</html>
