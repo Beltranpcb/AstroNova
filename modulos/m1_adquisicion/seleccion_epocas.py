@@ -105,7 +105,9 @@ def _diagnostico(por_detector: dict[int, list[dict]]) -> str:
     """Explica por qué no hay trío, detector a detector, para decidir si hay que cambiar de campo."""
     lineas = [
         "Ningún detector tiene una pareja A-B "
-        f"({SEPARACION_MIN_H} a {SEPARACION_MAX_H} h) con una plantilla a más de {PLANTILLA_MIN_DIAS:.0f} días."
+        f"({SEPARACION_MIN_H} a {SEPARACION_MAX_H} h)"
+        f" con una plantilla a más de {PLANTILLA_MIN_DIAS:.0f} días de A y de B"
+        " (la plantilla puede ser de otro detector)."
     ]
     for detector in sorted(por_detector):
         tiempos = sorted(e["t_min"] for e in por_detector[detector])
