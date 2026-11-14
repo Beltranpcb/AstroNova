@@ -2,7 +2,7 @@
 # ARCHIVO: modulos/m6_huella_espectral/pruebas/prueba_huella_espectral.py
 # MODULO: m6_huella_espectral (Lote C)
 # ROL: Comprueba el ajuste espectral sobre espectros sintéticos.
-# LEE: Espectros sintéticos creados en memoria; recortes FITS sintéticos; esquemas/espectros.schema.json.
+# LEE: Espectros sintéticos creados en memoria; recortes FITS sintéticos; contratos/espectros.schema.json (copia en esquemas/).
 # PRODUCE: El veredicto de pytest.
 # FUNCIONAMIENTO PREVISTO:
 #   Recibe de prueba: cuerpo negro de 300 K, espectro con pico en 4,26 micras.
@@ -13,20 +13,39 @@
 # USO: python -m pytest modulos/m6_huella_espectral/pruebas -q
 # ESTRUCTURA: un bloque por archivo del módulo. El campo sintético (fixture `campo`) tiene tres
 #             estrellas fijas y un objeto móvil de espectro plano conocido, en siete exposiciones.
-# ESTADO: Parte 2 de 4 del Lote C. Cubre trayectoria.py y fotometria.py.
+# ESTADO: Módulo completo (partes 2, 3 y 4 del Lote C). Cubre los cinco archivos de cálculo.
 # ============================================================================
 import json
 from pathlib import Path
 
+import jsonschema
 import numpy as np
 import pytest
 from astropy.io import fits
 from astropy.wcs import WCS
 from astropy.wcs.utils import proj_plane_pixel_area
 
-from modulos.m6_huella_espectral import fotometria, trayectoria
+from modulos.m6_huella_espectral import (
+    ajuste_planck,
+    comparacion_plantillas,
+    escritura_espectros,
+    fotometria,
+    trayectoria,
+)
 
 MODULO = Path(__file__).resolve().parents[1]
+
+
+def _ruta_esquema(nombre):
+    """Contratos/ si existe el árbol completo; esquemas/ si el módulo va suelto."""
+    for base in Path(__file__).resolve().parents:
+        candidato = base / "contratos" / nombre
+        if candidato.is_file():
+            return candidato
+    return MODULO / "esquemas" / nombre
+
+
+ESQUEMA_ESPECTROS = json.loads(_ruta_esquema("espectros.schema.json").read_text(encoding="utf-8"))
 LADO = 118
 ESCALA_GRADOS = 6.15 / 3600
 RUIDO = 0.01  # MJy/sr
@@ -228,3 +247,126 @@ def prueba_sin_wcs_wave_falla_y_fuera_de_la_imagen_no_mide():
     ra, dec = cielo(PIXEL_A)
     with pytest.raises(ValueError, match="WCS-WAVE"):
         fotometria.medir_en_recorte(hdul, ra, dec)
+
+
+# ------------------------------------------------- comparación y escritura
+def _puntos_sinteticos(lam, flujo, error, primer_detector=1):
+    """Puntos con la forma que consume el módulo."""
+    return [
+        {
+            "longitud_onda_micras": float(l),
+            "flujo_mjy": float(f),
+            "error_mjy": float(e),
+            "mjd": 60900.0 + 0.04 * i,
+            "detector": int(1 + (primer_detector - 1 + i) % 6),
+            "senal_ruido": float(f / e),
+        }
+        for i, (l, f, e) in enumerate(zip(lam, flujo, error))
+    ]
+
+
+def _planck_de_la_prueba(lam, temperatura):
+    """Ley de Planck escrita en la prueba, sin usar la del módulo."""
+    h, c, k = 6.62607015e-34, 2.99792458e8, 1.380649e-23
+    onda = np.asarray(lam, dtype=float) * 1e-6
+    return 2.0 * h * c ** 2 / onda ** 5 / np.expm1(h * c / (onda * k * temperatura))
+
+
+def prueba_planck_recupera_un_cuerpo_negro_de_300_k():
+    lam = np.array([2.42, 3.12, 3.83, 4.41, 4.71, 5.00])
+    flujo = _planck_de_la_prueba(lam, 300.0)
+    flujo = 2.0 * flujo / flujo.max()
+    medida = ajuste_planck.ajustar_puntos(_puntos_sinteticos(lam, flujo, 0.01 * flujo))
+    assert medida is not None
+    assert 270.0 <= medida["temperatura_k"] <= 330.0
+    assert medida["pico_wien_micras"] == pytest.approx(2898.0 / medida["temperatura_k"], rel=1e-3)
+    assert medida["incertidumbre_temperatura_k"] > 0
+
+
+def prueba_un_pico_en_4_26_micras_recibe_el_tipo_cometa():
+    lam = np.array([1.50, 2.00, 2.85, 3.50, 4.00, 4.26, 4.67, 4.90])
+
+    def gaussiana(centro, ancho):
+        return np.exp(-0.5 * ((lam - centro) / ancho) ** 2)
+
+    flujo = 1.0 - 0.18 * gaussiana(2.85, 0.18) + 2.5 * gaussiana(4.26, 0.06) + 0.9 * gaussiana(4.67, 0.05)
+    resultado = comparacion_plantillas.comparar(_puntos_sinteticos(lam, flujo, 0.02 * flujo))
+    assert resultado["tipo"] == "cometa"
+    assert len(resultado["ajustes"]) == 4
+    chi2 = {ajuste["tipo"]: ajuste["chi2_reducido"] for ajuste in resultado["ajustes"]}
+    assert chi2["cometa"] < chi2["asteroide_rocoso"]
+
+
+def prueba_el_ruido_puro_queda_como_indeterminado():
+    lam = np.array([1.20, 1.80, 2.50, 3.20, 4.00, 4.80])
+    azar = np.random.default_rng(2026)
+    flujo = azar.normal(0.0, 0.05, lam.size)
+    flujo -= flujo.mean()  # ruido sin flujo neto: no hay nada que detectar
+    puntos = _puntos_sinteticos(lam, flujo, np.full(lam.size, 0.05))
+    assert comparacion_plantillas.significancia_deteccion(puntos) < 3.0
+    assert comparacion_plantillas.comparar(puntos)["tipo"] == "indeterminado"
+
+
+def prueba_las_plantillas_cubren_el_rango_del_contrato():
+    plantillas = comparacion_plantillas.cargar_plantillas()
+    assert {plantilla["tipo"] for plantilla in plantillas} == {
+        "asteroide_rocoso", "asteroide_oscuro", "cometa", "enana_marron"}
+    for plantilla in plantillas:
+        assert plantilla["onda"].min() <= 0.75 and plantilla["onda"].max() >= 5.0
+        assert np.all(plantilla["flujo"] > 0)
+
+
+def prueba_la_escritura_produce_un_espectros_json_valido(tmp_path):
+    directorio = tmp_path / "m6_huella_espectral" / "campo_prueba"
+    directorio.mkdir(parents=True)
+    lam = np.array([1.50, 2.50, 3.50, 4.26, 4.67, 4.90])
+    flujo = 1.0 + 2.5 * np.exp(-0.5 * ((lam - 4.26) / 0.06) ** 2)
+    puntos = _puntos_sinteticos(lam, flujo, 0.02 * flujo)
+    (directorio / "espectro_medido.json").write_text(json.dumps({
+        "campo": "campo_prueba",
+        "espectros": [{"id_pareja": "p001", "agrupacion": "banda", "puntos": puntos}],
+    }), encoding="utf-8")
+    (directorio / "tipo_espectral.json").write_text(json.dumps({
+        "campo": "campo_prueba",
+        "espectros": [{"id_pareja": "p001", "tipo": "cometa",
+                       "ajustes_plantilla": [{"tipo": "cometa", "chi2_reducido": 1.1},
+                                             {"tipo": "asteroide_rocoso", "chi2_reducido": 8.0}]}],
+    }), encoding="utf-8")
+    (directorio / "temperatura.json").write_text(json.dumps({
+        "campo": "campo_prueba",
+        "espectros": [{"id_pareja": "p001", "temperatura_k": 255.0,
+                       "incertidumbre_temperatura_k": 20.0, "pico_wien_micras": 11.36}],
+    }), encoding="utf-8")
+
+    datos = json.loads(
+        escritura_espectros.escribir_campo("campo_prueba", raiz_datos=tmp_path).read_text(encoding="utf-8")
+    )
+    jsonschema.Draft202012Validator(ESQUEMA_ESPECTROS).validate(datos)
+    assert datos["version_contrato"] == "1"
+    assert datos["espectros"][0]["tipo"] == "cometa"
+    assert set(datos["espectros"][0]["puntos"][0]) == {
+        "longitud_onda_micras", "flujo_mjy", "error_mjy", "mjd", "detector"}
+
+
+def prueba_el_pipeline_completo_clasifica_y_valida(tmp_path):
+    directorio = tmp_path / "m6_huella_espectral" / "campo_prueba"
+    directorio.mkdir(parents=True)
+    lam = np.array([1.50, 2.00, 2.85, 3.50, 4.00, 4.26, 4.67, 4.90])
+    flujo = (1.0 - 0.18 * np.exp(-0.5 * ((lam - 2.85) / 0.18) ** 2)
+             + 2.5 * np.exp(-0.5 * ((lam - 4.26) / 0.06) ** 2)
+             + 0.9 * np.exp(-0.5 * ((lam - 4.67) / 0.05) ** 2))
+    (directorio / "espectro_medido.json").write_text(json.dumps({
+        "campo": "campo_prueba",
+        "espectros": [{"id_pareja": "p001", "agrupacion": "banda",
+                       "puntos": _puntos_sinteticos(lam, flujo, 0.02 * flujo)}],
+    }), encoding="utf-8")
+
+    comparacion_plantillas.clasificar_campo("campo_prueba", raiz_datos=tmp_path)
+    ajuste_planck.ajustar_campo("campo_prueba", raiz_datos=tmp_path)
+    datos = json.loads(
+        escritura_espectros.escribir_campo("campo_prueba", raiz_datos=tmp_path).read_text(encoding="utf-8")
+    )
+    jsonschema.Draft202012Validator(ESQUEMA_ESPECTROS).validate(datos)
+    assert datos["espectros"][0]["tipo"] == "cometa"
+    assert datos["espectros"][0]["ajustes_plantilla"]
+    assert len(datos["espectros"][0]["puntos"]) == len(lam)

@@ -74,4 +74,10 @@ Si el espectro de un objeto móvil sale ruidoso se publica con agrupacion igual 
 
 ## Estado
 
-Esqueleto sin código: el comando de verificación falla hasta que el lote implemente el módulo.
+Implementado. Los cinco comandos de arriba se ejecutan en orden y la verificación
+pasa con `python -m pytest modulos/m6_huella_espectral/pruebas -q`.
+
+Las curvas de `plantillas.json` son sintéticas: reproducen los rasgos de la
+especificación (silicatos, hidratación, hielo de agua, CO₂, CO, metano), no son
+espectros de referencia medidos. Sirven para comparar formas y deben sustituirse
+por curvas de bibliografía antes de publicar.
