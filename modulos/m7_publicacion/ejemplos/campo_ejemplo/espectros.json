@@ -58,7 +58,8 @@
           "grados_libertad": 5,
           "n_puntos": 6,
           "origen_plantilla": "sintetica",
-          "referencia_plantilla": null
+          "referencia_plantilla": null,
+          "escala": 1.9
         },
         {
           "tipo": "asteroide_oscuro",
@@ -66,7 +67,8 @@
           "grados_libertad": 5,
           "n_puntos": 6,
           "origen_plantilla": "sintetica",
-          "referencia_plantilla": null
+          "referencia_plantilla": null,
+          "escala": 2.1
         },
         {
           "tipo": "cometa",
@@ -74,7 +76,8 @@
           "grados_libertad": 5,
           "n_puntos": 6,
           "origen_plantilla": "sintetica",
-          "referencia_plantilla": null
+          "referencia_plantilla": null,
+          "escala": 2.0
         },
         {
           "tipo": "enana_marron",
@@ -82,7 +85,8 @@
           "grados_libertad": 5,
           "n_puntos": 6,
           "origen_plantilla": "sintetica",
-          "referencia_plantilla": null
+          "referencia_plantilla": null,
+          "escala": 1.4
         }
       ],
       "temperatura_k": 255.0,
