@@ -138,8 +138,15 @@ function main(datos) {
 
   // --- escalas ------------------------------------------------------------
   const todas = espectros.flatMap((e) => e.puntos);
-  const lambdaMin = Math.min(...todas.map((p) => p.longitud_onda_micras));
-  const lambdaMax = Math.max(...todas.map((p) => p.longitud_onda_micras));
+  // El eje es SIEMPRE 0,75–5,0 µm, el rango del contrato. Si se ajustara a los
+  // datos del campo, una huella real de dos puntos entre 4,69 y 4,74 µm se
+  // estiraría por toda la gráfica y parecería cubrir todo el infrarrojo.
+  const lambdaMin = 0.75;
+  const lambdaMax = 5.0;
+  const lambdaDatos = [
+    Math.min(...todas.map((p) => p.longitud_onda_micras)),
+    Math.max(...todas.map((p) => p.longitud_onda_micras)),
+  ];
   // Se normaliza cada huella por su propio máximo: los objetos tienen brillos
   // muy distintos y si no, las débiles desaparecen.
   let flujoMaximo = 0;
@@ -192,10 +199,19 @@ function main(datos) {
       grupoListones.add(banda);
     }
 
-    // etiqueta
+    // puntos medidos: con una huella de dos puntos, la curva es casi un punto
+    const esfera = new THREE.SphereGeometry(0.045, 12, 12);
+    const materialPunto = new THREE.MeshBasicMaterial({ color });
+    for (const p of puntos_) {
+      const marca = new THREE.Mesh(esfera, materialPunto);
+      marca.position.set(p.x, p.y, z);
+      grupoListones.add(marca);
+    }
+
+    // etiqueta junto al primer punto, no en el borde del eje
     const nombre = candidato ? (candidato.nombre_objeto || "candidato") : espectro.id_pareja;
     const etiqueta = textoEnSprite(`${espectro.id_pareja} · ${nombre}`, `#${color.toString(16).padStart(6, "0")}`);
-    etiqueta.position.set(-largo - 0.55, fondo + altura + 0.32, z);
+    etiqueta.position.set(puntos_[0].x, puntos_[0].y + 0.28, z);
     grupoListones.add(etiqueta);
   });
 
@@ -233,6 +249,11 @@ function main(datos) {
     );
     superficie.visible = false;
     raiz.add(superficie);
+  }
+
+  if (!superficie) {
+    botonConectar.disabled = true;
+    botonConectar.title = "Hace falta más de una huella para unirlas";
   }
 
   botonConectar.addEventListener("click", () => {
@@ -292,7 +313,8 @@ function main(datos) {
     escena, camara, renderizador,
     espectros: espectros.length,
     puntos: normalizadas.map((p) => p.length),
-    lambda: [lambdaMin, lambdaMax],
+    lambda: lambdaDatos,
+    eje: [lambdaMin, lambdaMax],
     superficieVisible: () => !!(superficie && superficie.visible),
   };
 }
