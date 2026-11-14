@@ -20,6 +20,14 @@
     { color: "#7DD3FC", dash: [6, 4], punto: "rect", etiqueta: "B" },
   ];
 
+  // Cuatro estilos de línea para las plantillas: se distinguen sin depender del color.
+  const ESTILO_PLANTILLA = [
+    { color: "#4ADE80", dash: [2, 3] },
+    { color: "#C084FC", dash: [8, 3, 2, 3] },
+    { color: "#F87171", dash: [10, 4] },
+    { color: "#94A3B8", dash: [1, 4] },
+  ];
+
   const est = {
     cargado: false,
     cargando: false,
@@ -30,6 +38,8 @@
     modo: "flujo",
     lambda0: 2.0,
     grafico: null,
+    plantillas: null, // plantillas.json publicado (o null)
+    plantillasCargadas: false,
     x: null, // [min, max] del zoom, null = rango completo
   };
 
@@ -56,6 +66,11 @@
         } catch (error) {
           console.warn(`Campo ${c.campo} sin datos espectrales`, error);
         }
+      }
+      try {
+        est.plantillas = (await HX.leerDatos("plantillas.json")).plantillas || null;
+      } catch (error) {
+        est.plantillas = null; // opcional: sin él solo se muestra la tabla
       }
       const { objetos, sinEspectro } = L.construirObjetos(campos);
       est.objetos = objetos;
@@ -102,7 +117,8 @@
   function series() {
     const lista = [];
     const avisos = [];
-    for (const [i, id] of [[0, est.a], [1, est.b]]) {
+    const ids = est.modo === "plantillas" ? [[0, est.a]] : [[0, est.a], [1, est.b]];
+    for (const [i, id] of ids) {
       const o = objetoPorId(id);
       if (!o) continue;
       let puntos = o.puntos;
@@ -133,6 +149,7 @@
         ctx.strokeStyle = ds.borderColor;
         ctx.lineWidth = 1;
         ctx.setLineDash([]);
+        if (ds.esPlantilla) return;
         ds.data.forEach((p) => {
           const x = scales.x.getPixelForValue(p.x);
           const y1 = scales.y.getPixelForValue(p.y - p.e);
@@ -199,8 +216,25 @@
       showLine: true,
       tension: 0,
     }));
+    if (est.modo === "plantillas" && lista[0]) {
+      const resumen = L.resumenPlantillas(lista[0], est.plantillas);
+      const rango = [est.x ? est.x[0] : L.LAMBDA_MIN, est.x ? est.x[1] : L.LAMBDA_MAX];
+      resumen.ajustes.forEach((a, i) => {
+        const pl = (est.plantillas || []).find((x) => x.tipo === a.tipo);
+        const curva = L.curvaEscalada(pl, a.escala, rango[0], rango[1]);
+        if (!curva.length) return;
+        const mejor = resumen.mejor && resumen.mejor.tipo === a.tipo;
+        const estilo = ESTILO_PLANTILLA[i % ESTILO_PLANTILLA.length];
+        datasets.push({
+          label: `Plantilla: ${L.etiquetaPlantilla(a.tipo, est.plantillas)}${a.origen_plantilla === "bibliografia" ? "" : " (sintética)"}`,
+          data: curva.map((p) => ({ x: p.x, y: p.y, e: 0 })),
+          borderColor: estilo.color, backgroundColor: estilo.color, borderDash: estilo.dash,
+          borderWidth: mejor ? 2.6 : 1.1, pointRadius: 0, pointHoverRadius: 0, showLine: true, tension: 0, esPlantilla: true,
+        });
+      });
+    }
     const yl = limitesY(lista, est.x);
-    const unidad = est.modo === "flujo" ? "flujo (mJy)" : "flujo normalizado (adimensional)";
+    const unidad = est.modo === "normalizado" ? "flujo normalizado (adimensional)" : "flujo (mJy)";
     const opciones = {
       responsive: true,
       maintainAspectRatio: false,
@@ -216,7 +250,8 @@
             title: (items) => `λ = ${coma(items[0].parsed.x, 3)} µm`,
             label: (item) => {
               const p = item.raw;
-              const u = est.modo === "flujo" ? " mJy" : "";
+              if (item.dataset.esPlantilla) return `${item.dataset.label}: ${coma(p.y, 4)} mJy (escalada)`;
+              const u = est.modo === "normalizado" ? "" : " mJy";
               return `${item.dataset.label}: ${coma(p.y, 4)} ± ${coma(p.e, 4)}${u}` + (p.det ? ` · detector ${p.det}` : "");
             },
           },
@@ -265,7 +300,29 @@
       </div>`;
   }
 
+  function pintarPlantillas(lista) {
+    const caja = $("cmp-compatibilidad");
+    const metodo = $("cmp-metodo");
+    $("cmp-tarjetas").innerHTML = lista.map(tarjeta).join("");
+    metodo.textContent = "Objeto frente a plantilla: evalúa compatibilidad con un modelo de referencia. No identifica el objeto " +
+      "ni equivale a compararlo con otro objeto observado. Las curvas se dibujan multiplicadas por la escala del ajuste de m6.";
+    if (!lista.length) { caja.className = "cmp-compat"; caja.innerHTML = ""; return; }
+    const r = L.resumenPlantillas(lista[0], est.plantillas);
+    const filas = r.ajustes.map((a) => `<tr${r.mejor && r.mejor.tipo === a.tipo ? ' class="mejor"' : ""}>
+        <td>${L.etiquetaPlantilla(a.tipo, est.plantillas)}</td><td>${coma(a.chi2_reducido, 2)}</td>
+        <td>${a.grados_libertad}</td><td>${a.n_puntos === undefined ? "—" : a.n_puntos}</td>
+        <td>${a.origen_plantilla === "bibliografia" ? "bibliografía" : "sintética"}</td></tr>`).join("");
+    const avisos = L.avisosDe(lista[0]).map((x) => `<li>${x}</li>`).join("");
+    caja.className = `cmp-compat ${r.nivel === "compatible" ? "ok" : "aviso"}`;
+    caja.innerHTML = `<b>${r.texto}</b>` +
+      (filas ? `<table class="cmp-tabla"><thead><tr><th>Plantilla</th><th>χ² reducido</th><th>Grados de libertad</th><th>Puntos</th><th>Origen</th></tr></thead><tbody>${filas}</tbody></table>` +
+        `<p class="cmp-nota">χ² diagonal con una escala libre; no modela correlaciones entre canales ni errores sistemáticos.</p>` : "") +
+      (avisos ? `<ul>${avisos}</ul>` : "") +
+      (est.plantillas ? "" : "<p class=\"cmp-nota\">plantillas.json no está publicado: no se dibujan las curvas.</p>");
+  }
+
   function pintarPaneles(lista, avisosSerie) {
+    if (est.modo === "plantillas") { pintarPlantillas(lista); return; }
     $("cmp-tarjetas").innerHTML = lista.map(tarjeta).join("");
 
     const caja = $("cmp-compatibilidad");
@@ -305,7 +362,16 @@
     if (!est.cargado) return;
     const { lista, avisos } = series();
     $("cmp-lambda-caja").hidden = est.modo !== "normalizado";
-    for (const m of ["flujo", "normalizado"]) {
+    $("cmp-b").disabled = est.modo === "plantillas"; // en este modo solo se evalúa A
+    const aviso = $("cmp-aviso-conceptual");
+    if (aviso) {
+      aviso.innerHTML = est.modo === "plantillas"
+        ? "Aquí se evalúa <b>un objeto frente a plantillas de referencia</b>. Indica qué modelo reproduce mejor la forma del " +
+          "espectro entre los evaluados; no identifica el objeto ni demuestra su composición."
+        : "Aquí se comparan <b>dos espectros observados</b> entre sí. No es una clasificación ni una comparación con " +
+          "plantillas: una curva parecida no prueba que dos objetos sean del mismo tipo.";
+    }
+    for (const m of ["flujo", "normalizado", "plantillas"]) {
       const b = $(`cmp-modo-${m}`);
       if (b) b.classList.toggle("activo", est.modo === m);
     }
@@ -368,6 +434,7 @@
     $("cmp-b").addEventListener("change", (e) => { est.b = e.target.value || null; refrescar(); });
     $("cmp-modo-flujo").addEventListener("click", () => { est.modo = "flujo"; refrescar(); });
     $("cmp-modo-normalizado").addEventListener("click", () => { est.modo = "normalizado"; refrescar(); });
+    $("cmp-modo-plantillas").addEventListener("click", () => { est.modo = "plantillas"; refrescar(); });
     $("cmp-lambda").addEventListener("input", (e) => {
       const v = parseFloat(e.target.value);
       if (Number.isFinite(v) && v >= L.LAMBDA_MIN && v <= L.LAMBDA_MAX) { est.lambda0 = v; refrescar(); }

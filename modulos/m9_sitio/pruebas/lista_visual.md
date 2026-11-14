@@ -61,4 +61,6 @@ Servir el repositorio desde la raíz y abrir
 - [ ] «Espectros normalizados» indica el método y la longitud de onda de normalización.
 - [ ] Con datos sintéticos aparece el aviso de que el flujo absoluto no tiene valor físico.
 - [ ] Zoom (+, −, rueda) y «Restablecer» funcionan; CSV y PNG se descargan.
-- [ ] «Plantillas» aparece desactivado y «Identificar» dice que está pendiente.
+- [ ] «Plantillas (objeto A)» dibuja las cuatro curvas con estilos distintos, desactiva B y muestra la tabla de χ² con grados de libertad.
+- [ ] El texto dice «más compatible con la plantilla … entre las evaluadas», nunca «es un …».
+- [ ] «Identificar» dice que está pendiente.

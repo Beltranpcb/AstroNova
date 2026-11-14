@@ -302,6 +302,11 @@ header.barra .vistas button { font-size: .82rem; padding: .3rem .7rem; }
 .cmp-tarjeta p { margin: .2rem 0; }
 .cmp-meta { font-size: .74rem; color: var(--texto_secundario); }
 .cmp-avisos { font-size: .74rem; color: var(--texto_secundario); padding-left: 1.1rem; margin: .3rem 0 0; }
+.cmp-tabla { width: 100%; border-collapse: collapse; margin: .5rem 0; font-size: .8rem; }
+.cmp-tabla th, .cmp-tabla td { text-align: left; padding: .25rem .5rem; border-bottom: 1px solid var(--borde-suave); }
+.cmp-tabla th { color: var(--texto_secundario); font-weight: 500; }
+.cmp-tabla tr.mejor td { color: var(--acierto); font-weight: 600; }
+.cmp-controles select:disabled { opacity: .45; }
 .insignia { font-size: .72rem; padding: .1rem .5rem; border-radius: 999px; border: 1px solid var(--borde); }
 .insignia.real { border-color: var(--acierto); color: var(--acierto); }
 .insignia.sintetico { border-color: var(--acento); color: var(--acento); }

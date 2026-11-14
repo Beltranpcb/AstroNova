@@ -17,6 +17,7 @@ Mostrar al público qué se mueve en cada campo, con la naturaleza de cada objet
 - `datos/m7_publicacion/campos.json`
 - `datos/m7_publicacion/<campo>/{meta,candidatos,espectros}.json`
 - Opcionalmente `datos/m7_publicacion/<campo>/{epoca_a,epoca_b,diferencia}.png`
+- Opcionalmente `datos/m7_publicacion/plantillas.json` (curvas de referencia)
 - Aladin Lite y Chart.js, cargados por CDN
 - `contratos/guia_visual.md` (variables de color)
 
@@ -72,7 +73,11 @@ tiene dos pestañas:
   al menos dos puntos válidos; se puede ver el flujo medido (mJy) o normalizado
   (método y longitud de onda visibles), hacer zoom y descargar CSV o PNG. Avisa si el
   intervalo común es estrecho, la resolución difiere o el origen de los datos no coincide.
-  No clasifica nada: la comparación con plantillas es otra herramienta (pendiente).
+  No clasifica nada.
+- **Plantillas (objeto A)**: el objeto frente a las plantillas de `plantillas.json`, dibujadas
+  con la escala del ajuste de m6, y la tabla de χ² reducido con grados de libertad, puntos y
+  origen. Se redacta como «más compatible con la plantilla X entre las evaluadas»; si m6 dejó
+  el tipo indeterminado, la web no elige ninguna.
 - **Identificar**: pendiente. Necesita el WCS del campo y la consulta de catálogos.
 
 Los datos de demostración llevan `origen: "sintetico"` y la web lo muestra en cada objeto.

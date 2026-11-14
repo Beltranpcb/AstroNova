@@ -151,3 +151,60 @@ test("con los ejemplos de los contratos hay un objeto con espectro y otro sin é
   assert.equal(objetos[0].origen, "sintetico");
   assert.ok(L.avisosDe(objetos[0]).length >= 1);
 });
+
+// ------------------------------------------------------- objeto frente a plantillas
+const ajuste = (tipo, chi2, gl = 7, extra = {}) => ({
+  tipo, chi2_reducido: chi2, grados_libertad: gl, n_puntos: gl + 1, escala: 2, origen_plantilla: "sintetica", ...extra,
+});
+const objetoConAjustes = (tipo, ajustes) => ({ tipo, ajustes, advertencias: [], puntos: [] });
+const PLANTILLAS = [{ tipo: "cometa", etiqueta_publica: "Hielo y CO2", longitud_onda_micras: [1, 2, 3], flujo_normalizado: [1, 2, 4] }];
+
+test("los ajustes se ordenan por chi2 y se descartan los que no tienen grados de libertad", () => {
+  const o = objetoConAjustes("cometa", [ajuste("asteroide_rocoso", 8), ajuste("cometa", 1.1), { tipo: "enana_marron", chi2_reducido: 0.5 }]);
+  assert.deepEqual(L.ajustesOrdenados(o).map((a) => a.tipo), ["cometa", "asteroide_rocoso"]);
+});
+
+test("el resumen dice «más compatible» entre las evaluadas y no afirma que el objeto sea de ese tipo", () => {
+  const r = L.resumenPlantillas(objetoConAjustes("cometa", [ajuste("cometa", 1.1), ajuste("asteroide_rocoso", 8)]), PLANTILLAS);
+  assert.equal(r.nivel, "compatible");
+  assert.match(r.texto, /Más compatible con la plantilla «Hielo y CO2» entre las 2 evaluadas/);
+  assert.match(r.texto, /1,10, 7 grados de libertad, 8 puntos/);
+  assert.match(r.texto, /sintética/);
+  assert.doesNotMatch(r.texto, /el objeto es|es un (asteroide|cometa)|es una enana/i);
+});
+
+test("si m6 dejó el tipo indeterminado, la web no elige ninguna plantilla", () => {
+  const r = L.resumenPlantillas(objetoConAjustes("indeterminado", [ajuste("cometa", 9), ajuste("asteroide_rocoso", 12)]), PLANTILLAS);
+  assert.equal(r.nivel, "indeterminado");
+  assert.equal(r.mejor, null);
+  assert.match(r.texto, /Ninguna de las 2 plantillas/);
+});
+
+test("sin grados de libertad no se muestra ninguna métrica", () => {
+  const r = L.resumenPlantillas(objetoConAjustes("cometa", [{ tipo: "cometa", chi2_reducido: 1.1 }]), PLANTILLAS);
+  assert.equal(r.nivel, "sin_datos");
+  assert.deepEqual(r.ajustes, []);
+  assert.match(r.texto, /no se muestra ninguna métrica/);
+});
+
+test("una plantilla de bibliografía no se anuncia como sintética", () => {
+  const a = ajuste("cometa", 1.1, 7, { origen_plantilla: "bibliografia" });
+  assert.doesNotMatch(L.resumenPlantillas(objetoConAjustes("cometa", [a]), PLANTILLAS).texto, /sintética/);
+});
+
+test("la curva escalada multiplica por la escala del ajuste y respeta el rango", () => {
+  const c = L.curvaEscalada(PLANTILLAS[0], 2, 1.5, 3);
+  assert.deepEqual(c, [{ x: 2, y: 4 }, { x: 3, y: 8 }]);
+  assert.deepEqual(L.curvaEscalada(PLANTILLAS[0], undefined, 1, 3), []);   // sin escala no se dibuja
+  assert.deepEqual(L.curvaEscalada(null, 2, 1, 3), []);
+  assert.deepEqual(L.curvaEscalada(PLANTILLAS[0], -1, 1, 3), []);
+});
+
+test("construirObjetos conserva el tipo y los ajustes del contrato", () => {
+  const { objetos } = L.construirObjetos([{
+    campo: "c", meta: {}, candidatos: { candidatos: [candidato("p001")] },
+    espectros: { espectros: [espectro("p001", [punto(1, 1), punto(2, 1)], { tipo: "cometa", ajustes_plantilla: [ajuste("cometa", 1)] })] },
+  }]);
+  assert.equal(objetos[0].tipo, "cometa");
+  assert.equal(objetos[0].ajustes.length, 1);
+});

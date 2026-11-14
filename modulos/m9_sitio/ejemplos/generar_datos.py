@@ -152,6 +152,33 @@ def flujo(tipo: str, lam: float) -> float:
     return max(valor, 0.01)
 
 
+def ajustar(plantilla: str, puntos: list[dict]) -> dict:
+    """Ajuste por mínimos cuadrados de la plantilla (escala libre), como hace m6 con datos reales."""
+    modelo = [flujo(plantilla, p["longitud_onda_micras"]) for p in puntos]
+    pesos = [1.0 / p["error_mjy"] ** 2 for p in puntos]
+    escala = sum(w * m * p["flujo_mjy"] for w, m, p in zip(pesos, modelo, puntos)) / sum(w * m * m for w, m in zip(pesos, modelo))
+    chi2 = sum(((p["flujo_mjy"] - escala * m) / p["error_mjy"]) ** 2 for m, p in zip(modelo, puntos))
+    gl = len(puntos) - 1
+    return {
+        "tipo": plantilla, "chi2_reducido": round(chi2 / gl, 3), "grados_libertad": gl, "n_puntos": len(puntos),
+        "escala": round(escala, 5), "origen_plantilla": "sintetica", "referencia_plantilla": None,
+    }
+
+
+def plantillas_publicadas() -> dict:
+    """plantillas.json de demostración: las mismas curvas que generan los espectros."""
+    lam = [round(0.75 + i * (4.25 / 89), 4) for i in range(90)]
+    etiquetas = {"asteroide_rocoso": "Roca con silicatos", "asteroide_oscuro": "Cuerpo primitivo oscuro",
+                 "cometa": "Hielo y CO2", "enana_marron": "Enana marrón con metano"}
+    return {
+        "_comentario": "Plantillas de demostración (sintéticas). No son espectros de referencia medidos.",
+        "version_contrato": VERSION_CONTRATO,
+        "plantillas": [{"tipo": p, "etiqueta_publica": etiquetas[p], "origen_plantilla": "sintetica", "referencia": None,
+                        "longitud_onda_micras": lam, "flujo_normalizado": [round(flujo(p, x), 4) for x in lam]}
+                       for p in PLANTILLAS],
+    }
+
+
 def detector_de(lam: float) -> int:
     for numero, (bajo, alto) in BANDAS_DETECTOR.items():
         if bajo <= lam <= alto:
@@ -178,17 +205,12 @@ def espectro(cand: dict, mjd: float) -> dict | None:
         })
 
     temperaturas = cand["temperatura"]
-    ajustes = [
-        {"tipo": plantilla, "chi2_reducido": round(1.02 + 0.35 * abs(i - 1.0) + i * 0.7, 3)}
-        for i, plantilla in enumerate(PLANTILLAS)
-    ]
-    for ajuste in ajustes:
-        if ajuste["tipo"] == tipo:
-            ajuste["chi2_reducido"] = 1.02
+    ajustes = [ajustar(plantilla, puntos) for plantilla in PLANTILLAS]
 
     return {
         "id_pareja": cand["id"],
         "origen": "sintetico",
+        "advertencias": ["plantillas_sinteticas"],
         "agrupacion": "banda",
         "puntos": puntos,
         "tipo": tipo,
@@ -315,6 +337,9 @@ def main() -> None:
         print(f"  {campo['campo']}: {len(candidatos['candidatos'])} candidatos, "
               f"{len(espectros['espectros'])} espectros")
 
+    (raiz / "plantillas.json").write_text(
+        json.dumps(plantillas_publicadas(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
     campos_doc = {
         "_comentario": "Índice de los campos publicados.",
         "version_contrato": VERSION_CONTRATO,

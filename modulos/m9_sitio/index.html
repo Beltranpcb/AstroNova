@@ -148,7 +148,7 @@
 
     <section id="panel-comparar" class="panel analisis-panel" role="tabpanel">
       <h2>Comparar espectros</h2>
-      <p class="aviso-conceptual">
+      <p class="aviso-conceptual" id="cmp-aviso-conceptual">
         Aquí se comparan <b>dos espectros observados</b> entre sí. No es una clasificación ni una
         comparación con plantillas: una curva parecida no prueba que dos objetos sean del mismo tipo.
       </p>
@@ -161,7 +161,7 @@
         <div class="grupo" role="group" aria-label="Modo de representación">
           <button id="cmp-modo-flujo" class="activo">Flujo medido</button>
           <button id="cmp-modo-normalizado">Espectros normalizados</button>
-          <button id="cmp-modo-plantillas" disabled title="Comparación con plantillas: pendiente">Plantillas (pendiente)</button>
+          <button id="cmp-modo-plantillas" title="Un objeto frente a las plantillas de referencia">Plantillas (objeto A)</button>
         </div>
         <label id="cmp-lambda-caja" hidden>Normalizar en
           <input id="cmp-lambda" type="number" min="0.75" max="5" step="0.05" value="2.00"> µm
