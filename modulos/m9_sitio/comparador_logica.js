@@ -9,7 +9,8 @@
      1. construirObjetos: un objeto por pareja con espectro válido  ->  lista del selector
      2. normalizar: divide por el flujo en lambda0 (o por la mediana)  ->  forma espectral
      3. evaluarCompatibilidad: rango común, resolución, origen  ->  estado y avisos
-     4. aCsv: serie visible  ->  texto CSV
+     4. resumenPlantillas / curvaEscalada: redacta la compatibilidad objeto-plantilla y escala la curva
+   5. aCsv: serie visible  ->  texto CSV
    VERIFICACION: pruebas/prueba_comparador.js (node --test).
    NOTA: No calcula ninguna clasificación ni estadística entre objetos: comparar
          dos espectros observados no es comparar con plantillas (eso lo hace m6).
@@ -99,6 +100,8 @@
           estado: cand.estado,
           origen,
           agrupacion: esp.agrupacion || null,
+          tipo: esp.tipo || null,
+          ajustes: Array.isArray(esp.ajustes_plantilla) ? esp.ajustes_plantilla : [],
           advertencias: Array.isArray(esp.advertencias) ? esp.advertencias : [],
           puntos,
         });
@@ -198,6 +201,62 @@
     return objeto.advertencias.map((codigo) => TEXTO_ADVERTENCIA[codigo] || codigo);
   }
 
+  const ETIQUETA_TIPO = {
+    asteroide_rocoso: "asteroide rocoso",
+    asteroide_oscuro: "asteroide oscuro",
+    cometa: "cometa",
+    enana_marron: "enana marrón",
+  };
+
+  /** Etiqueta pública de una plantilla; si plantillas.json no está, la del tipo. */
+  function etiquetaPlantilla(tipo, plantillas) {
+    const p = (plantillas || []).find((x) => x.tipo === tipo);
+    return (p && p.etiqueta_publica) || ETIQUETA_TIPO[tipo] || tipo;
+  }
+
+  /** Ajustes con grados de libertad y chi2 finitos, del más al menos compatible. */
+  function ajustesOrdenados(objeto) {
+    return objeto.ajustes
+      .filter((a) => esNumero(a.chi2_reducido) && Number.isInteger(a.grados_libertad) && a.grados_libertad >= 1)
+      .slice()
+      .sort((a, b) => a.chi2_reducido - b.chi2_reducido);
+  }
+
+  /**
+   * Resumen de la comparación objeto-plantilla. La decisión del tipo la toma m6:
+   * aquí solo se redacta con la cautela del contrato («más compatible entre las
+   * evaluadas»), sin recalcular ni afirmar que el objeto «es» de ese tipo.
+   */
+  function resumenPlantillas(objeto, plantillas) {
+    const ajustes = ajustesOrdenados(objeto);
+    if (!ajustes.length) {
+      return { nivel: "sin_datos", ajustes, mejor: null,
+        texto: "No hay χ² con grados de libertad para este objeto: no se muestra ninguna métrica." };
+    }
+    const mejor = ajustes.find((a) => a.tipo === objeto.tipo) || null;
+    if (!mejor) {
+      return { nivel: "indeterminado", ajustes, mejor: null,
+        texto: `Ninguna de las ${ajustes.length} plantillas evaluadas reproduce el espectro dentro del umbral de m6.` };
+    }
+    const sintetica = mejor.origen_plantilla !== "bibliografia";
+    return { nivel: "compatible", ajustes, mejor,
+      texto: `Más compatible con la plantilla «${etiquetaPlantilla(mejor.tipo, plantillas)}» entre las ${ajustes.length} evaluadas ` +
+        `(χ² reducido ${mejor.chi2_reducido.toFixed(2).replace(".", ",")}, ${mejor.grados_libertad} grados de libertad, ` +
+        `${mejor.n_puntos === undefined ? "?" : mejor.n_puntos} puntos)` +
+        (sintetica ? ". La plantilla es sintética: no es un espectro de referencia medido." : ".") };
+  }
+
+  /** Curva de la plantilla multiplicada por la escala del ajuste, dentro de [min, max] µm. */
+  function curvaEscalada(plantilla, escala, minimo, maximo) {
+    if (!plantilla || !esNumero(escala) || escala <= 0) return [];
+    const salida = [];
+    for (let i = 0; i < plantilla.longitud_onda_micras.length; i++) {
+      const x = plantilla.longitud_onda_micras[i];
+      if (x >= minimo && x <= maximo) salida.push({ x, y: plantilla.flujo_normalizado[i] * escala });
+    }
+    return salida;
+  }
+
   function celda(texto) {
     const s = String(texto);
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
@@ -215,7 +274,7 @@
             p.longitud_onda_micras,
             p.flujo_mjy,
             p.error_mjy,
-            modo === "flujo" ? "mJy" : "adimensional",
+            modo === "normalizado" ? "adimensional" : "mJy",
             p.detector === undefined ? "" : p.detector,
             p.mjd === undefined ? "" : p.mjd,
             s.origen || "no_declarado",
@@ -236,6 +295,10 @@
     rangoComun,
     evaluarCompatibilidad,
     avisosDe,
+    etiquetaPlantilla,
+    ajustesOrdenados,
+    resumenPlantillas,
+    curvaEscalada,
     aCsv,
   };
 });

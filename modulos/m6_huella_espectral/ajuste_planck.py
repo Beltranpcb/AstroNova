@@ -13,7 +13,8 @@
 # VERIFICACION: El producto del pico de Wien por la temperatura vale 2898 micras kelvin con un
 #   error menor que 1.
 # USO: python -m modulos.m6_huella_espectral.ajuste_planck <campo>
-# NOTA: El ajuste deja libre la amplitud (el brillo absoluto no se conoce) y solo usa la forma.
+# NOTA: Si el pico de Wien cae más allá de 5 micras la temperatura se extrapola desde la cola de Wien:
+#   se marca cuerpo_negro_fuera_de_rango y la web no debe presentarla como medida directa. El ajuste deja libre la amplitud (el brillo absoluto no se conoce) y solo usa la forma.
 #   Los puntos dentro de bandas de emisión o absorción conocidas no son continuo; si quedan menos
 #   de tres, se usan todos. Sin convergencia, la temperatura queda nula y el contrato lo admite.
 # ============================================================================
@@ -31,6 +32,7 @@ CONSTANTE_BOLTZMANN = 1.380649e-23  # J/K
 CONSTANTE_WIEN_MICRAS_KELVIN = 2898.0
 
 MINIMO_PUNTOS = 3
+LONGITUD_ONDA_MAXIMA = 5.0  # límite superior de SPHEREx; un pico de Wien más allá se extrapola
 TEMPERATURA_MINIMA, TEMPERATURA_MAXIMA = 50.0, 3000.0
 # Bandas con emisión o absorción conocida: no describen el continuo térmico.
 BANDAS_FUERA_DEL_CONTINUO = (
@@ -147,6 +149,10 @@ def ajustar_campo(campo, raiz_datos="datos"):
                 "temperatura_k": ajuste["temperatura_k"] if ajuste else None,
                 "incertidumbre_temperatura_k": ajuste["incertidumbre_temperatura_k"] if ajuste else None,
                 "pico_wien_micras": ajuste["pico_wien_micras"] if ajuste else None,
+                "advertencias": (
+                    ["cuerpo_negro_fuera_de_rango"]
+                    if ajuste and ajuste["pico_wien_micras"] > LONGITUD_ONDA_MAXIMA else []
+                ),
             }
         )
     return escribir_json(

@@ -8,7 +8,7 @@
 #   Recibe de comparacion_plantillas.py, ajuste_planck.py: tipo_espectral.json, temperatura.json.
 #   1. Leer espectro_medido.json  ->  puntos por objeto
 #   2. Unir por id_pareja  ->  registro por objeto
-#   3. Escribir según el contrato  ->  espectros.json
+#   3. Añadir advertencias y calidad, y publicar plantillas.json  ->  espectros.json, plantillas.json
 #   Entrega a m7: espectros.json.
 # VERIFICACION: El archivo valida contra contratos/espectros.schema.json; hay un espectro por
 #   pareja candidata medida.
@@ -21,8 +21,12 @@ import json
 import sys
 from pathlib import Path
 
+import numpy as np
+
 VERSION_CONTRATO = "1"
 CAMPOS_DEL_PUNTO = ("longitud_onda_micras", "flujo_mjy", "error_mjy", "mjd", "detector")
+RUTA_PLANTILLAS = Path(__file__).resolve().parent / "plantillas.json"
+CAMPOS_PLANTILLA = ("tipo", "etiqueta_publica", "origen_plantilla", "referencia", "longitud_onda_micras", "flujo_normalizado")
 COMENTARIO = (
     "Generado por m6_huella_espectral/escritura_espectros.py. Un espectro por pareja candidata "
     "medida, con su tipo y su temperatura."
@@ -42,6 +46,40 @@ def escribir_json(ruta, contenido):
         json.dump(contenido, archivo, ensure_ascii=False, indent=2)
         archivo.write("\n")
     return ruta
+
+
+def calidad_de(puntos):
+    """Resumen de calidad del espectro: nº de puntos, cobertura y mediana de la señal/ruido."""
+    onda = [p["longitud_onda_micras"] for p in puntos]
+    snr = [abs(p["flujo_mjy"]) / p["error_mjy"] for p in puntos]
+    return {
+        "n_puntos": len(puntos),
+        "cobertura_micras": [min(onda), max(onda)],
+        "senal_ruido_mediana": round(float(np.median(snr)), 2),
+        "resolucion_espectral": None,  # no se mide: SPHEREx no la entrega por punto
+    }
+
+
+def unir_advertencias(*listas):
+    """Unión sin repetidos que conserva el orden de aparición."""
+    vistas = []
+    for lista in listas:
+        for aviso in lista or []:
+            if aviso not in vistas:
+                vistas.append(aviso)
+    return vistas
+
+
+def publicar_plantillas(raiz_datos="datos"):
+    """Escribe datos/m6_huella_espectral/plantillas.json según contratos/plantillas.schema.json."""
+    origen = leer_json(RUTA_PLANTILLAS)
+    contenido = {
+        "_comentario": "Generado por m6_huella_espectral/escritura_espectros.py desde plantillas.json del módulo. "
+                       "Las plantillas con origen_plantilla sintetica no son espectros de referencia medidos.",
+        "version_contrato": VERSION_CONTRATO,
+        "plantillas": [{nombre: plantilla[nombre] for nombre in CAMPOS_PLANTILLA} for plantilla in origen["plantillas"]],
+    }
+    return escribir_json(Path(raiz_datos) / "m6_huella_espectral" / "plantillas.json", contenido)
 
 
 def construir_espectros(campo, medido, tipos, temperaturas):
@@ -82,6 +120,8 @@ def construir_espectros(campo, medido, tipos, temperaturas):
                 ],
                 "tipo": tipo["tipo"],
                 "ajustes_plantilla": tipo["ajustes_plantilla"],
+                "advertencias": unir_advertencias(tipo.get("advertencias"), temperatura.get("advertencias")),
+                "calidad": calidad_de(medida["puntos"]),
                 "temperatura_k": temperatura["temperatura_k"],
                 "incertidumbre_temperatura_k": temperatura["incertidumbre_temperatura_k"],
                 "pico_wien_micras": temperatura["pico_wien_micras"],
@@ -127,6 +167,7 @@ def escribir_campo(campo, raiz_datos="datos"):
         leer_json(directorio / "tipo_espectral.json"),
         leer_json(directorio / "temperatura.json"),
     )
+    publicar_plantillas(raiz_datos)
     return escribir_json(directorio / "espectros.json", contenido)
 
 
