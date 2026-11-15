@@ -143,9 +143,9 @@ def demo(tmp_path):
 
 
 def prueba_los_datos_de_demostracion_cumplen_los_contratos(demo):
-    problemas = control_publicacion.validar(str(demo))
-    # La demo no trae PNG a propósito (la web los sintetiza y lo avisa): es lo único que puede faltar.
-    assert [p for p in problemas if not p.endswith(".png")] == []
+    # La demo no trae PNG a propósito (la web los sintetiza y lo avisa): al declarar origen
+    # «sintetico», el control no los exige y la demo convive con campos reales publicados.
+    assert control_publicacion.validar(str(demo)) == []
     esquema("catalogo.schema.json").validate(leer(demo / "m7_publicacion" / "catalogo.json"))
     esquema("plantillas.schema.json").validate(leer(demo / "m7_publicacion" / "plantillas.json"))
     for meta in (demo / "m7_publicacion").glob("*/meta.json"):
@@ -167,3 +167,12 @@ def prueba_en_la_demo_el_wcs_publicado_explica_las_posiciones(demo):
                 ra, dec = astro.pixel_to_world_values(p["x"], p["y"])
                 d_ra = ((float(ra) - p["ra_grados"] + 180) % 360 - 180) * np.cos(np.radians(p["dec_grados"]))
                 assert np.hypot(d_ra, float(dec) - p["dec_grados"]) * 3600 < 0.01, (ruta.parent.name, c["id_candidato"], clave)
+
+
+def prueba_un_campo_real_sin_png_sigue_rechazado(demo):
+    meta = demo / "m7_publicacion" / "slipher" / "meta.json"
+    datos = leer(meta)
+    datos["origen"] = "real"
+    meta.write_text(json.dumps(datos), encoding="utf-8")
+    problemas = control_publicacion.validar(str(demo))
+    assert any("slipher" in p and "epoca_a.png" in p for p in problemas)

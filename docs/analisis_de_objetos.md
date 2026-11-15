@@ -46,7 +46,7 @@ node --test modulos/m9_sitio/pruebas/prueba_*.js  # 55: lógica de la web
 | Plantillas de referencia | **Sintéticas** | `plantillas.json` se declara `origen_plantilla: sintetica`. El χ² y el tipo solo tienen valor científico con curvas de bibliografía. |
 | Composición molecular | Método real, validación **pendiente** | Calibrado con espectros sintéticos (S con desviación típica 0,95-1,1; ninguna detección falsa en 270 espectros sin rasgos). Falta validarlo con observaciones reales. |
 | Catálogo navegable | Real cuando lo es el pipeline | Solo objetos detectados en los campos publicados. No hay Vesta, Ceres ni Halley porque el proyecto no tiene sus datos. |
-| Datos de la web hoy | **Demostración** | Los tres campos (`slipher`, `atlas`, `luhman`) son sintéticos y lo dicen. El pipeline real no pudo ejecutarse el 2026-11-14: el TAP de IRSA devolvía 502. |
+| Datos de la web hoy | **Demostración** | Los tres campos (`slipher`, `atlas`, `luhman`) son sintéticos y lo dicen. El TAP de IRSA devolvía 502 el 2026-11-14; m1 tiene ahora un respaldo que lista las exposiciones leyendo las cabeceras de los FITS en la copia pública de AWS S3 (`indice_s3.py`), y el servicio de recortes de IRSA sí responde. |
 
 ## Criterios de aceptación de la especificación
 
@@ -95,7 +95,7 @@ contratos: `plantillas.schema.json` y `catalogo.schema.json`. Detalle en [contra
 1. **Gaia DR3 en m5**: precalcular un cone search por detección contra el archivo de la ESA y
    guardarlo en `identificacion.coincidencias` (el contrato ya lo admite).
 2. **Plantillas de bibliografía**: sustituir las cuatro curvas sintéticas y rellenar `referencia`.
-3. **Datos reales**: volver a ejecutar `actualizar_publicacion --forzar` cuando el TAP de IRSA responda.
+3. **Datos reales**: `actualizar_publicacion --forzar` ya no depende del TAP de IRSA (respaldo por S3). La primera exploración de una semana tarda minutos (lee ~2000 cabeceras); después queda en caché en `datos/m1_adquisicion/indice_s3/`.
 4. **CO junto a 5 µm**: con el muestreo nominal suele quedar en «datos insuficientes»; no se relajó
    el continuo porque con menos puntos aparecían candidatas falsas en el 10 % de los espectros.
 5. **SkyBoT es geocéntrico**: para objetos muy cercanos convendría pasar la posición de SPHEREx.

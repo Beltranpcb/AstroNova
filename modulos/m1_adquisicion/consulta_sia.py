@@ -11,7 +11,9 @@
 #   Entrega a seleccion_epocas.py: listado_exposiciones.json.
 # VERIFICACION: El listado sale ordenado por t_min; cada fila tiene identificador, t_min, detector, access_url.
 # NOTA: el servicio SIA del IRSA solo cubre wise/twomass/ptf y no indexa SPHEREx;
-#       la vía que responde es TAP sobre spherex.obscore (ver issue #2).
+#       la vía que responde es TAP sobre spherex.obscore (ver issue #2). Si TAP no
+#       responde (502 el 2026-11-14) y no hay listado guardado, se recurre a la copia
+#       pública en AWS S3 leyendo cabeceras (indice_s3.py).
 # ============================================================================
 from __future__ import annotations
 
@@ -221,8 +223,12 @@ def consultar_tap(ra: float, dec: float, radio: float, coleccion: str,
     raise RuntimeError(f"TAP falló en {coleccion} tras {reintentos} intentos: {ultimo_error}")
 
 
-def consultar_campo(campo: dict, consulta=consultar_tap) -> dict:
-    """Consulta las tres colecciones y devuelve el listado. `consulta` se puede sustituir en pruebas."""
+def consultar_campo(campo: dict, consulta=consultar_tap, explorar_s3=None) -> dict:
+    """Consulta las tres colecciones y devuelve el listado.
+
+    `consulta` y `explorar_s3` se pueden sustituir en pruebas. Orden de respaldo cuando
+    TAP falla: listado guardado del campo; si no lo hay, exploración de S3.
+    """
     filas: dict[str, list[dict]] = {}
     errores: list[str] = []
     for coleccion in COLECCIONES:
@@ -243,6 +249,18 @@ def consultar_campo(campo: dict, consulta=consultar_tap) -> dict:
             )
             with open(guardado, encoding="utf-8") as f:
                 return json.load(f)
+        # Sin listado previo queda la copia pública de SPHEREx en AWS S3: se leen las
+        # cabeceras de los FITS y se comprueba la cobertura con su WCS (indice_s3.py).
+        if explorar_s3 is None:
+            from modulos.m1_adquisicion.indice_s3 import explorar_campo as explorar_s3
+        print("AVISO: TAP no responde y no hay listado guardado; se explora S3", file=sys.stderr)
+        try:
+            listado_s3 = explorar_s3(campo)
+        except Exception as error:  # red o S3: se informa de las dos vías
+            raise RuntimeError("Ninguna colección respondió por TAP:\n  " + "\n  ".join(errores)
+                               + f"\n  y la exploración de S3 falló: {error}") from error
+        if listado_s3["exposiciones"]:
+            return listado_s3
         raise RuntimeError("Ninguna colección respondió:\n  " + "\n  ".join(errores))
     listado = construir_listado(campo, filas)
     if not listado["exposiciones"]:

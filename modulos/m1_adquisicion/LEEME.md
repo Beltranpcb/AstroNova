@@ -32,7 +32,8 @@ Ningún otro módulo.
 |---|---|
 | `LEEME.md` | Describe el módulo junto a su comando de verificación. |
 | `campos_objetivo.json` | Declara los campos del cielo que el pipeline debe procesar. |
-| `consulta_sia.py` | Lista las exposiciones de SPHEREx que cubren un campo objetivo. |
+| `consulta_sia.py` | Lista las exposiciones de SPHEREx que cubren un campo objetivo (TAP de IRSA; respaldo: listado guardado y luego S3). |
+| `indice_s3.py` | Lista las exposiciones sin TAP: lee las cabeceras de los FITS en la copia pública de AWS S3 y comprueba la cobertura con su WCS. |
 | `seleccion_epocas.py` | Elige qué exposiciones cumplen cada papel del contrato de selección. |
 | `descarga_recortes.py` | Descarga el recorte FITS de cada exposición seleccionada. |
 | `pruebas/prueba_adquisicion.py` | Comprueba la selección de épocas sobre un listado sintético sin usar la red. |

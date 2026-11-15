@@ -153,6 +153,15 @@ def validar_pngs(directorio):
     return problemas
 
 
+def es_sintetico(directorio):
+    """Verdadero si el meta.json del campo declara origen «sintetico»."""
+    ruta = directorio / "meta.json"
+    try:
+        return ruta.is_file() and leer_json(ruta).get("origen") == "sintetico"
+    except (json.JSONDecodeError, AttributeError):
+        return False
+
+
 def validar_catalogo_contra_candidatos(base):
     """Cada objeto de catalogo.json debe ser un candidato publicado y no anunciar un espectro que no existe."""
     ruta = base / "catalogo.json"
@@ -198,7 +207,12 @@ def validar(raiz_datos=RAIZ_DATOS_POR_DEFECTO, raiz_contratos=None):
 
     # 2. Cada campo publicado completo y conforme a su esquema.
     for directorio in sorted(ruta for ruta in base.iterdir() if ruta.is_dir()):
-        faltan = [nombre for nombre in ARCHIVOS_DEL_CAMPO if not (directorio / nombre).is_file()]
+        # Un campo que se declara sintético (datos de demostración de m9) puede no traer los PNG:
+        # la web los sintetiza y lo avisa. Un campo real o sin origen declarado sí los necesita.
+        exigidos = ARCHIVOS_DEL_CAMPO
+        if es_sintetico(directorio):
+            exigidos = tuple(n for n in ARCHIVOS_DEL_CAMPO if n not in ARCHIVOS_PNG)
+        faltan = [nombre for nombre in exigidos if not (directorio / nombre).is_file()]
         for nombre in faltan:
             problemas.append("%s: falta %s" % (directorio, nombre))
 
