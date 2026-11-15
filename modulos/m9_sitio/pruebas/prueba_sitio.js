@@ -112,7 +112,9 @@ for (const conjunto of conjuntos()) {
         assert.ok(esp.puntos.length > 0);
         for (const punto of esp.puntos) {
           assert.ok(punto.longitud_onda_micras >= 0.75 && punto.longitud_onda_micras <= 5.0);
-          assert.ok(punto.flujo_mjy > 0);
+          // Con datos reales, el flujo de un objeto débil puede salir negativo por el ruido:
+          // el contrato no le pone mínimo. Solo tiene que ser un número.
+          assert.ok(Number.isFinite(punto.flujo_mjy));
           assert.ok(punto.error_mjy > 0);
           assert.ok(punto.mjd > 0);
           assert.ok(punto.detector >= 1 && punto.detector <= 6);
